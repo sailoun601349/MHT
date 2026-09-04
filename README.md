@@ -3,32 +3,36 @@
 轻量级个人订单系统：用户手机号下单 → 获取全局查询码 → 查询订单；管理员发货上传快递面单。
 
 - 技术栈：Flask + SQLite + Bootstrap 5（手机优先，管理员电脑可用）
-- 适配 4C4G 个人服务器，内存占用 < 300MB
 
 ## 快速开始（开发）
 
 ```bash
+cp .env.example .env        # 按需修改超级管理员等私有配置
 python -m venv venv
 venv\Scripts\activate        # Windows
 pip install -r requirements.txt
-python run.py                 # 打开 http://127.0.0.1:5000
+python run.py                 # 打开 http://127.0.0.1:18805
 ```
 
-首次启动自动创建数据库与默认**超级管理员**（手机号 `13185020250`，初始登录密码 `sailoun`）。数据库已生成后改配置不会更新已有管理员，修改凭据请用下方 reset-admin 命令。
+超级管理员手机号与登录密码通过根目录 `.env` 提供（见下）；未配置时首次启动不自动创建，
+可运行 `flask --app run reset-admin` 手动创建。
 
-## 配置（环境变量）
+## 配置（本地 .env）
 
-| 变量 | 默认值 | 说明 |
-|---|---|---|
-| SECRET_KEY | 开发默认值 | 生产必须随机生成 |
-| ADMIN_PHONE | 13185020250 | 超级管理员手机号（写死） |
-| ADMIN_CODE | sailoun | 超级管理员初始登录密码（仅首启/重置用） |
-| SESSION_HOURS | 8 | 管理员会话时长 |
+私有配置（超级管理员、密钥等）一律放在根目录 `.env`（已被 `.gitignore` 忽略，不入库），
+参考 `.env.example`。也可直接用环境变量覆盖。
+
+| 变量 | 说明 |
+|---|---|
+| SECRET_KEY | Flask 会话密钥，生产必须随机生成（如 `openssl rand -hex 32`） |
+| ADMIN_PHONE | 超级管理员手机号（首次启动自动创建，仅 `reset-admin` 可改） |
+| ADMIN_CODE | 超级管理员初始登录密码（仅首启/重置用） |
+| SESSION_HOURS | 管理员会话时长（小时，默认 8） |
 
 重置管理员：
 
 ```bash
-flask --app run reset-admin --phone 13185020250 --code sailoun
+flask --app run reset-admin --phone <手机号> --code <登录密码>
 ```
 
 ## 商品规格配置
@@ -42,7 +46,7 @@ flask --app run reset-admin --phone 13185020250 --code sailoun
 - 用户查询：手机号 + 查询码；下单：仅需手机号
 - 管理员：手机号 + 登录密码登录，发货时上传面单照片并录入快递单号
 - 状态机：待发货 → 已发货 → 已完成/已取消，取消与退回必须填写原因；非法流转后端拒绝
-- 多管理员：超级管理员（`13185020250`）+ 多个普通管理员；普通管理员经专属链接 `/<短码>` 获客下单，订单按责任人隔离，超级管理员可见全部
+- 多管理员：1 个超级管理员（手机号来自 `.env` 配置）+ 多个普通管理员；普通管理员经专属链接 `/<短码>` 获客下单，订单按责任人隔离，超级管理员可见全部
 
 ## 部署
 
@@ -52,6 +56,7 @@ flask --app run reset-admin --phone 13185020250 --code sailoun
 
 ```
 ├── run.py                  # 入口
+├── .env.example            # 私有配置模板（真实值放 .env，不入库）
 ├── app/
 │   ├── config.py           # 配置 + 规格
 │   ├── extensions.py       # db / login_manager
@@ -64,15 +69,15 @@ flask --app run reset-admin --phone 13185020250 --code sailoun
 ├── data/                   # SQLite（运行时生成）
 ├── uploads/                # 面单照片（运行时生成）
 ├── deploy/                 # nginx / systemd / backup 示例
-└── docs/                   # 设计文档 01-06
+└── docs/                   # 设计文档 01-11
 ```
 
 ## 许可证
 
 本项目使用 [MIT License](LICENSE)。
 
-## 功能路线
+## 功能
 
-- ✅ 下单 / 查询码 / 订单查询 / 管理发货
-- ⏳ OCR 快递单号（已预留 /admin/ocr 接口，待接入第三方服务）
-- 未来可扩展：支付、短信通知、Excel 导出、小程序
+- 下单 / 全局查询码 / 订单查询
+- 一码多址（一次下单多个收货地址）、多管理员与订单归属隔离
+- 管理端：发货上传面单照片（拍照/相册、单张删除）、整组发货、日期筛选、CSV 导出

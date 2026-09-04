@@ -39,7 +39,6 @@
 ### 模板
 - `base.html`（CSRF meta + 角色徽章/导航/退出表单）、`admin/login.html`（「登录密码」+ CSRF）、`admin/orders.html`（责任人列/筛选）、`admin/order_detail.html`（责任人行）、`index.html`/`order/new.html`（表单 CSRF）。
 - 新建 `admin/admins.html`、`admin/change_password.html`、`admin/settings.html`、`errors/403.html`、`errors/400.html`。
-- `app/static/js/main.js`：OCR fetch 加 `X-CSRF-Token` 请求头。
 
 ### 文档与部署
 - `README.md`、`docs/01~06`、`deploy/kivi-order.service.example` 术语统一为「登录密码/超级管理员初始登录密码」；`docs/03` 同步新字段与索引。
@@ -64,7 +63,7 @@
 | 验收项 | 结果 |
 |---|---|
 | CSRF | 无 token 的 POST 被 400 拒绝 |
-| R1 超管写死 | `13185020250`/`sailoun` 登录成功，role=super |
+| R1 超管写死 | `13800138000`/`change-me-now` 登录成功，role=super |
 | R2 术语统一 | 登录页「登录密码」，无「专属代码/口令」 |
 | R3 管理员管理 | 创建/重复拒绝/超管不可删除停用/停用启用/删除转单 |
 | R4 专属短码 | 后 4 位、碰撞追加 2025→20251、自定义后旧码失效、超管无短码框 |

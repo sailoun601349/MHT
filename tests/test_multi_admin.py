@@ -26,12 +26,15 @@ class TestConfig(Config):
     DATABASE_PATH = TMP / "orders.db"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + DATABASE_PATH.as_posix()
     UPLOAD_DIR = TMP / "uploads"
+    # 测试专用超级管理员（与本地/生产真实账号无关）
+    ADMIN_PHONE = "13900000000"
+    ADMIN_CODE = "testpass888"
 
 
 app = create_app(TestConfig)
 
-SUPER_PHONE = "13185020250"
-SUPER_CODE = "sailoun"
+SUPER_PHONE = "13900000000"
+SUPER_CODE = "testpass888"
 A_PHONE = "13900002025"   # 后4位 2025
 B_PHONE = "13800002025"   # 后4位 2025 -> 碰撞 -> 20251
 C_PHONE = "13700008888"   # 后4位 8888
@@ -131,7 +134,7 @@ check("R2: 登录页无「专属代码/口令」", ("专属代码" not in html) 
 # 超级管理员登录
 super_c = app.test_client()
 resp = login(super_c, SUPER_PHONE, SUPER_CODE)
-check("R1: 超级管理员 sailoun 登录成功", resp.status_code == 302, f"status={resp.status_code}")
+check("R1: 超级管理员登录成功", resp.status_code == 302, f"status={resp.status_code}")
 super_id = admin_fields(SUPER_PHONE)["id"]
 check("R1: 超管 role=super", admin_fields(SUPER_PHONE)["is_super"])
 

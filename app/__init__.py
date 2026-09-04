@@ -29,7 +29,11 @@ def _set_sqlite_pragma(dbapi_conn, _record):
 
 
 def _seed(app):
-    """首次启动：初始化全局顺序号计数器与写死的超级管理员。"""
+    """首次启动：初始化全局顺序号计数器与超级管理员。
+
+    超级管理员手机号/登录密码来自 ADMIN_PHONE/ADMIN_CODE（本地 .env 或环境变量，
+    仓库不内置真实凭据）。未配置时不自动创建，仅初始化计数器并提示。
+    """
     from werkzeug.security import generate_password_hash
 
     from .models import Admin, Counter
@@ -37,7 +41,15 @@ def _seed(app):
     if db.session.get(Counter, "order_seq") is None:
         db.session.add(Counter(name="order_seq", value=0))
 
-    admin_phone = app.config["ADMIN_PHONE"]
+    admin_phone = (app.config.get("ADMIN_PHONE") or "").strip()
+    if not admin_phone or not app.config.get("ADMIN_CODE"):
+        db.session.commit()
+        app.logger.warning(
+            "未配置 ADMIN_PHONE / ADMIN_CODE（请写入本地 .env 或环境变量），"
+            "已跳过超级管理员自动创建；可运行 flask reset-admin --phone <手机号> --code <登录密码> 创建。"
+        )
+        return
+
     admin = Admin.query.filter_by(phone=admin_phone).first()
     if admin is None:
         admin = Admin(

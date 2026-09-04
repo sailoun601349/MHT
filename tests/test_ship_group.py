@@ -27,12 +27,14 @@ class TestConfig(Config):
     DATABASE_PATH = TMP / "orders.db"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + DATABASE_PATH.as_posix()
     UPLOAD_DIR = TMP / "uploads"
+    ADMIN_PHONE = "13900000000"
+    ADMIN_CODE = "testpass888"
 
 
 app = create_app(TestConfig)
 
-SUPER_PHONE = "13185020250"
-SUPER_CODE = "sailoun"
+SUPER_PHONE = "13900000000"
+SUPER_CODE = "testpass888"
 
 results = []
 

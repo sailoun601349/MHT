@@ -6,9 +6,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      SECRET_KEY: ${SECRET_KEY:-please-change-me}
-      ADMIN_PHONE: ${ADMIN_PHONE:-13185020250}
-      ADMIN_CODE: ${ADMIN_CODE:-sailoun}
+      # 凭据一律从根目录 .env 读取（不入库）；未设置时 docker compose 直接报错
+      SECRET_KEY: ${SECRET_KEY:?请在 .env 中设置 SECRET_KEY}
+      ADMIN_PHONE: ${ADMIN_PHONE:?请在 .env 中设置 ADMIN_PHONE}
+      ADMIN_CODE: ${ADMIN_CODE:?请在 .env 中设置 ADMIN_CODE}
     volumes:
       - ./data:/app/data
       - ./uploads:/app/uploads

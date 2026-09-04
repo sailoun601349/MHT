@@ -23,7 +23,7 @@
 | 6 | 备注互相覆盖，操作无留痕 | `change_order_status()` 直接 `order.note = remark`（order_service.py），每次流转把上一次取消/退回原因抹掉 | 新增 `order_logs` 表（order_id/action/from/to/remark/at），07 号文档本来就建议做；note 保留最近一次即可 | M |
 | 7 | 下单可重复提交 | `new.html` 提交按钮无 disable/loading 逻辑，手机双击 = 两个查询码两单 | JS：submit 时禁用按钮 + 文案"提交中…"；后端可选加同 phone 10 秒去重 | S |
 | 8 | 代码无版本控制 | `git status` → not a git repository；服务器是唯一副本 | `git init + add + commit`（.gitignore 已备好），有 GitHub 就推远程，没有就定期 tar 进备份 | S |
-| 9 | 管理员凭据弱默认且公开 | `ADMIN_CODE` 默认 `sailoun`、手机号写在 README/config；运行进程 env 里也是默认值 | `flask reset-admin` 换强代码；service 单元里只留 SECRET_KEY，管理员信息走 CLI 重置 | S |
+| 9 | 管理员凭据弱默认且公开 | 超级管理员手机号/登录密码存在弱默认值并写在 README/config 中（历史设计） | 凭据移入本地 `.env`（不入库），用 `flask reset-admin` 设置；service 单元里只留 SECRET_KEY | S |
 
 ## P2 — 近期规划（管理效率 / 性能 / 加固）
 
@@ -42,7 +42,6 @@
 
 | # | 优化项 | 现状 | 优化方案 | 工作量 |
 |---|---|---|---|---|
-| 18 | OCR 快递单号 | `/admin/ocr` 返回 501 桩接口 | 接入腾讯/百度 OCR（有免费额度），发货页拍照识别回填单号 | M |
 | 19 | 省市区手填易错 | 下单页省/市/区为纯文本框 | 换省市区级联选择器（行政区划数据一份 JSON 即可，无外部依赖） | M |
 | 20 | 时间字段为字符串 | `created_at/updated_at` 存 "YYYY-MM-DD HH:MM:SS" 字符串 | 保持现状也可；若做导出/统计增强，迁移为 ISO8601 或 datetime | M |
 | 21 | 无健康检查 | 无 /healthz | 加轻量端点（查 DB pragma + 返回 ok），供日后监控探活 | S |

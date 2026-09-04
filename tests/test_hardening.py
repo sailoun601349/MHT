@@ -24,6 +24,8 @@ class TestConfig(Config):
     DATABASE_PATH = TMP / "orders.db"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + DATABASE_PATH.as_posix()
     UPLOAD_DIR = TMP / "uploads"
+    ADMIN_PHONE = "13900000000"
+    ADMIN_CODE = "testpass888"
 
 
 app = create_app(TestConfig)
@@ -90,7 +92,7 @@ print("=" * 70)
 # 超管登录
 super_c = app.test_client()
 super_c.get("/admin/login")
-super_c.post("/admin/login", data={"phone": "13185020250", "code": "sailoun", "_csrf_token": csrf(super_c)})
+super_c.post("/admin/login", data={"phone": "13900000000", "code": "testpass888", "_csrf_token": csrf(super_c)})
 
 order_id = o["id"]
 # 状态变更 created -> cancelled（带备注）
@@ -108,7 +110,7 @@ with app.app_context():
         check("留痕: from=created", lg.from_status == "created", f"from={lg.from_status}")
         check("留痕: to=cancelled", lg.to_status == "cancelled", f"to={lg.to_status}")
         check("留痕: remark 记录", lg.remark == "测试取消", f"remark={lg.remark}")
-        check("留痕: 操作人为超管", lg.operator_admin_id == Admin.query.filter_by(phone="13185020250").first().id)
+        check("留痕: 操作人为超管", lg.operator_admin_id == Admin.query.filter_by(phone="13900000000").first().id)
 
 print("=" * 70)
 print("下单防重复提交（幂等 nonce）")

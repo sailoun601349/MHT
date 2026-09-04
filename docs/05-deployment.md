@@ -2,7 +2,7 @@
 
 ## 1. 服务器要求
 
-- 4C4G 个人服务器（本方案内存占用通常 < 300MB）
+- 低配个人服务器即可（轻量级 Flask + SQLite 单体）
 - OS：Ubuntu/Debian/CentOS 均可
 - Python 3.10+
 - 域名 + HTTPS（推荐 Caddy 自动证书，或 Nginx + certbot）

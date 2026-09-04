@@ -20,7 +20,6 @@
 | GET | /admin/orders/<id> | 订单详情 + 发货操作 | 管理员 |
 | POST | /admin/orders/<id>/ship | 保存发货信息（快递+照片） | 管理员 |
 | POST | /admin/orders/<id>/status | 标记完成/取消 | 管理员 |
-| POST | /admin/ocr | OCR 识别快递单号（预留桩） | 管理员 |
 | GET | /uploads/<path> | 面单照片访问 | 公开 |
 | GET | /static/<path> | 静态资源 | 公开 |
 
@@ -80,13 +79,6 @@
 字段: status ∈ 当前状态允许的目标集合 {completed, cancelled, created(退回)}
       remark（取消/退回必填，写入 note）
 行为: 按 Order.STATUS_TRANSITIONS 矩阵校验后流转 → 302 详情页
-```
-
-### POST /admin/ocr（预留）
-
-```
-返回 501 JSON: {"ok": false, "message": "OCR 功能待接入第三方服务"}
-后续接入百度/腾讯/阿里云 OCR 后，前端自动回填快递单号
 ```
 
 ## 3. 限流策略（内存实现，重启清零）

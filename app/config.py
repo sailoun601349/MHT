@@ -9,6 +9,32 @@ from sqlalchemy.pool import NullPool
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _load_dotenv() -> None:
+    """从项目根目录 .env 加载环境变量（无外部依赖）。
+
+    - .env 不入库（见 .gitignore），用于本地/私有配置（如超级管理员手机号与登录密码、SECRET_KEY）。
+    - 已存在的环境变量优先，不覆盖。
+    """
+    env_path = BASE_DIR / ".env"
+    if not env_path.exists():
+        return
+    try:
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key:
+                os.environ.setdefault(key, value)
+    except OSError:
+        pass
+
+
+_load_dotenv()
+
+
 class Config:
     # 基础
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
@@ -39,10 +65,11 @@ class Config:
         {"name": "10斤装", "price": 100},
     ]
 
-    # 管理员（默认值仅便于首次启动，上线必须修改）
-    # ADMIN_PHONE 为写死的超级管理员手机号；ADMIN_CODE 为其初始登录密码（仅首启/重置用）
-    ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "13185020250")
-    ADMIN_CODE = os.environ.get("ADMIN_CODE", "sailoun")
+    # 超级管理员（不在仓库内置真实凭据）
+    # 通过本地 .env 或环境变量提供 ADMIN_PHONE（手机号）与 ADMIN_CODE（初始登录密码）。
+    # 未配置时首次启动不会自动创建超级管理员，可先配置后重启，或运行 flask reset-admin 创建。
+    ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "").strip()
+    ADMIN_CODE = os.environ.get("ADMIN_CODE", "")
     ADMIN_NAME = os.environ.get("ADMIN_NAME", "管理员")
 
     # 登录密码最短长度（自助改密 / 创建管理员 / 重置密码均校验）

@@ -368,7 +368,6 @@ SQLite 不支持 `DROP UNIQUE`，采用**重建表**：
 | GET | `/admin/orders/<id>` | 组内导航 |
 | POST | `/admin/orders/<id>/ship` | 服务端状态校验（仅 created/shipped） |
 | POST | `/admin/orders/<id>/status` | 严格状态机校验 + 取消原因必填 |
-| POST | `/admin/ocr` | 不变 |
 
 ---
 

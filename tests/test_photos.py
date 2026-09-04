@@ -26,6 +26,8 @@ class TestConfig(Config):
     DATABASE_PATH = TMP / "orders.db"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + DATABASE_PATH.as_posix()
     UPLOAD_DIR = TMP / "uploads"
+    ADMIN_PHONE = "13900000000"
+    ADMIN_CODE = "testpass888"
 
 
 app = create_app(TestConfig)
@@ -93,7 +95,7 @@ check("max_photos = quantity*2 = 4", o["max_photos"] == 4, f"max={o['max_photos'
 
 super_c = app.test_client()
 super_c.get("/admin/login")
-super_c.post("/admin/login", data={"phone": "13185020250", "code": "sailoun", "_csrf_token": csrf(super_c)})
+super_c.post("/admin/login", data={"phone": "13900000000", "code": "testpass888", "_csrf_token": csrf(super_c)})
 
 order_id = o["id"]
 

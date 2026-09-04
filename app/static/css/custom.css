@@ -729,3 +729,107 @@ textarea.form-control { min-height: 48px; }
   color: var(--text-muted);
 }
 
+
+/* --------------------------------------------------------------------------
+   16. 首页品牌化（docs/14 视觉稿 + docs/15 执行指导）
+   -------------------------------------------------------------------------- */
+/* 方案 A：首页隐藏全局 navbar/footer，Hero 顶到状态栏；main 铺满 */
+.home-page .navbar,
+.home-page footer { display: none; }
+.home-page main.container { max-width: none; margin: 0; padding: 0; }
+.home-page .alert { margin: 10px 14px 0; }
+.home-wrap { max-width: 420px; margin: 0 auto; }
+
+/* 品牌 Hero：渐变 + 柔光斑 */
+.home-hero {
+  position: relative;
+  background: linear-gradient(180deg, #2E6B47 0%, #3D8B5F 46%, #5C9B70 100%);
+  padding-top: 34px;
+  padding-top: max(34px, env(safe-area-inset-top));
+  padding-right: 20px;
+  padding-bottom: 74px; /* 底部多留，供毛玻璃卡片上浮重叠 */
+  padding-left: 20px;
+  text-align: center;
+  overflow: hidden;
+  color: #fff;
+}
+.hero-glow { position: absolute; border-radius: 50%; pointer-events: none; }
+.hero-glow--a {
+  width: 120px; height: 120px; top: 18px; left: -22px;
+  background: radial-gradient(circle, rgba(255, 255, 255, .28), transparent 70%);
+}
+.hero-glow--b {
+  width: 150px; height: 150px; top: 96px; right: -30px;
+  background: radial-gradient(circle, rgba(250, 200, 120, .30), transparent 70%);
+}
+
+/* 吉祥物（呼吸 scale + 漂浮 translate，仅 transform） */
+.mascot { position: relative; z-index: 1; width: 118px; margin: 6px auto 2px; }
+.mascot--float { animation: kiwi-float 3.4s ease-in-out infinite; }
+.mascot-svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .18)); }
+.mascot--breathe { animation: kiwi-breathe 2.6s ease-in-out infinite; transform-origin: 50% 60%; }
+/* 表情态显隐 */
+.mascot .face { display: none; }
+.mascot[data-state="normal"] .face-normal,
+.mascot[data-state="blink"]  .face-blink,
+.mascot[data-state="happy"]  .face-happy,
+.mascot[data-state="focus"]  .face-focus { display: block; }
+
+@keyframes kiwi-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+@keyframes kiwi-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* 品牌语 */
+.hero-title {
+  position: relative; z-index: 1;
+  margin: 10px 0 8px;
+  font-size: 21px; font-weight: 500; letter-spacing: 1px;
+  color: #fff;
+}
+.hero-chip {
+  position: relative; z-index: 1;
+  display: inline-block;
+  background: rgba(255, 255, 255, .18);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: .5px solid rgba(255, 255, 255, .25);
+  color: #F0F7F1;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+/* 毛玻璃下单卡片（Safari 需 -webkit- 前缀；不支持时兜底实心白底） */
+.glass-card {
+  margin: -46px 14px 18px;
+  background: rgba(255, 255, 255, .78);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: .5px solid rgba(255, 255, 255, .6);
+  border-radius: 20px;
+  padding: 18px 16px;
+  box-shadow: var(--shadow-pop);
+  position: relative;
+  z-index: 2;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-card { background: #fff; }
+  .hero-chip { background: rgba(46, 107, 71, .55); }
+}
+
+/* 动效降级：系统偏好减弱动态时全部静止 */
+@media (prefers-reduced-motion: reduce) {
+  .mascot *,
+  .mascot--float,
+  .mascot--breathe { animation: none !important; }
+}
+
+/* 桌面端：Hero 与卡片均在 ≤420px 窄容器内视觉居中，避免拉宽 */
+@media (min-width: 768px) {
+  .home-wrap { padding: 0 14px; }
+}

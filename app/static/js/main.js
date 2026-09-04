@@ -42,3 +42,27 @@
     });
   });
 })();
+
+// 3. 首页吉祥物表情彩蛋（仅首页存在 .mascot，独立 IIFE + 守卫避免内页报错）
+(function () {
+  var mascot = document.querySelector('.mascot');
+  if (!mascot) return;
+
+  function setState(s) {
+    mascot.setAttribute('data-state', s);
+  }
+
+  var phone = document.getElementById('phone-input');
+  if (phone) {
+    // 输入手机号 → 「专注」表情；离开 → 恢复
+    phone.addEventListener('focus', function () { setState('focus'); });
+    phone.addEventListener('blur', function () { setState('normal'); });
+  }
+
+  // 定时眨眼：4s 周期切「眨眼」态 320ms（专注时不打扰）
+  window.setInterval(function () {
+    if (phone && document.activeElement === phone) return;
+    setState('blink');
+    window.setTimeout(function () { setState('normal'); }, 320);
+  }, 4000);
+})();

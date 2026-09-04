@@ -1,0 +1,33 @@
+# systemd 用户级单元示例（实际部署：ubuntu 用户，gunicorn 绑 127.0.0.1:18805）
+#
+# 安装：
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/kivi-order.service.example ~/.config/systemd/user/kivi-order.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now kivi-order
+#   loginctl enable-linger ubuntu   # 允许无登录会话时保持开机自启
+#
+# 说明：
+#   - gunicorn 只绑 127.0.0.1，公网入口由 nginx 反代（见 nginx.conf.example），
+#     避免登录密码、session cookie 明文走公网。
+#   - 不在单元里硬编码 ADMIN_PHONE / ADMIN_CODE（弱凭据风险）；
+#     首次启动后请用「flask reset-admin --phone <手机号> --code <登录密码>」设置。
+#   - SECRET_KEY 务必改为随机值（如 `openssl rand -hex 32`）。
+
+[Unit]
+Description=Kivi Order System (gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/MyProjects/18805-MHT
+Environment=SECRET_KEY=please-change-me-to-random-hex
+ExecStart=/home/ubuntu/MyProjects/18805-MHT/venv/bin/gunicorn -w 1 -t 120 -b 127.0.0.1:18805 \
+    --access-logfile /home/ubuntu/MyProjects/18805-MHT/logs/access.log \
+    --error-logfile /home/ubuntu/MyProjects/18805-MHT/logs/error.log \
+    run:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

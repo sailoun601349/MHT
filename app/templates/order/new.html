@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}下单 - 猕猴桃订购{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">📝 填写订单信息</h5>
+        <form method="post" action="{{ url_for('order.create') }}" id="order-form">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="submit_nonce" value="{{ order_nonce }}">
+          <input type="hidden" name="phone" value="{{ phone }}">
+          <input type="hidden" name="address_count" id="address-count" value="1">
+
+          <div class="mb-3">
+            <label class="form-label">下单手机号</label>
+            <input type="text" class="form-control" value="{{ phone }}" disabled>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">收货地址</h6>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="add-address"
+                    {% if max_addresses <= 1 %}disabled{% endif %}>➕ 添加地址</button>
+          </div>
+
+          <div id="address-list">
+            <div class="card address-card border shadow-sm mb-3">
+              <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                <span class="fw-bold">📍 地址 <span class="address-index">1</span></span>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-address">删除</button>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">收货人姓名 <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="receiver_name_0" required maxlength="100" placeholder="输入收货人姓名">
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">收货电话 <span class="text-danger">*</span></label>
+                  <input type="tel" class="form-control" name="receiver_phone_0" value="{{ phone }}"
+                         inputmode="numeric" maxlength="11" pattern="1[3-9][0-9]{9}" required>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">收货地址 <span class="text-danger">*</span></label>
+                  <textarea class="form-control" name="address_0" rows="3" required maxlength="500"
+                            placeholder="完整收货地址（省市区 + 街道门牌），可直接粘贴"></textarea>
+                </div>
+
+                <div class="row g-2">
+                  <div class="col-6">
+                    <label class="form-label">规格 <span class="text-danger">*</span></label>
+                    <div class="spec-group d-flex gap-2">
+                      {% for spec in specs %}
+                      <label class="spec-option flex-fill">
+                        <input type="radio" class="spec-radio" name="spec_name_0" value="{{ spec.name }}"
+                               data-price="{{ spec.price }}" {% if loop.first %}checked{% endif %}>
+                        <span class="spec-card">{{ spec.name }}<small class="d-block text-muted">¥{{ spec.price }}</small></span>
+                      </label>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label">数量 <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control quantity-input" name="quantity_0"
+                           min="1" max="99" value="1" required inputmode="numeric">
+                  </div>
+                </div>
+
+                <div class="address-subtotal-box mt-3">
+                  <span class="text-muted small">本地址小计：</span>
+                  <span class="fw-bold text-amount address-subtotal">¥0.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-text mb-3">每个地址单独填写，最后统一测算总费用；同一次提交生成一个查询码。</div>
+
+          <div class="total-box mb-4">
+            <div class="text-muted small">总费用（最多 {{ max_addresses }} 个地址）</div>
+            <div class="total-amount" id="total-display">¥0.00</div>
+          </div>
+
+          <button class="btn btn-primary btn-lg w-100" id="submit-btn">提交订单</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<template id="address-template">
+  <div class="card address-card border shadow-sm mb-3">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+      <span class="fw-bold">📍 地址 <span class="address-index">1</span></span>
+      <button type="button" class="btn btn-sm btn-outline-danger remove-address">删除</button>
+    </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label">收货人姓名 <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" name="receiver_name_{I}" required maxlength="100" placeholder="输入收货人姓名">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">收货电话 <span class="text-danger">*</span></label>
+        <input type="tel" class="form-control" name="receiver_phone_{I}" value="{{ phone }}"
+               inputmode="numeric" maxlength="11" pattern="1[3-9][0-9]{9}" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">收货地址 <span class="text-danger">*</span></label>
+        <textarea class="form-control" name="address_{I}" rows="3" required maxlength="500"
+                  placeholder="完整收货地址（省市区 + 街道门牌），可直接粘贴"></textarea>
+      </div>
+
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label">规格 <span class="text-danger">*</span></label>
+          <div class="spec-group d-flex gap-2">
+            {% for spec in specs %}
+            <label class="spec-option flex-fill">
+              <input type="radio" class="spec-radio" name="spec_name_{I}" value="{{ spec.name }}"
+                     data-price="{{ spec.price }}" {% if loop.first %}checked{% endif %}>
+              <span class="spec-card">{{ spec.name }}<small class="d-block text-muted">¥{{ spec.price }}</small></span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-6">
+          <label class="form-label">数量 <span class="text-danger">*</span></label>
+          <input type="number" class="form-control quantity-input" name="quantity_{I}"
+                 min="1" max="99" value="1" required inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="address-subtotal-box mt-3">
+        <span class="text-muted small">本地址小计：</span>
+        <span class="fw-bold text-amount address-subtotal">¥0.00</span>
+      </div>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var addBtn = document.getElementById('add-address');
+  var list = document.getElementById('address-list');
+  var countInput = document.getElementById('address-count');
+  var totalDisplay = document.getElementById('total-display');
+  var template = document.getElementById('address-template');
+  var maxAddresses = {{ max_addresses }};
+  var FIELD_PREFIXES = ['receiver_name', 'receiver_phone', 'address', 'spec_name', 'quantity'];
+
+  function cardHtml(i) {
+    return template.innerHTML.replace(/\{I\}/g, i);
+  }
+
+  function updateTotals() {
+    var cards = document.querySelectorAll('.address-card');
+    countInput.value = cards.length;
+    var total = 0;
+    cards.forEach(function (card) {
+      var checked = card.querySelector('.spec-radio:checked');
+      var qty = parseInt(card.querySelector('.quantity-input').value || '0', 10) || 0;
+      var price = checked ? parseFloat(checked.dataset.price || '0') : 0;
+      var sub = price * qty;
+      card.querySelector('.address-subtotal').textContent = '¥' + sub.toFixed(2);
+      total += sub;
+    });
+    totalDisplay.textContent = '¥' + total.toFixed(2);
+  }
+
+  function reindex() {
+    var cards = document.querySelectorAll('.address-card');
+    cards.forEach(function (card, idx) {
+      card.querySelector('.address-index').textContent = idx + 1;
+      card.querySelector('.remove-address').style.visibility = cards.length > 1 ? 'visible' : 'hidden';
+      FIELD_PREFIXES.forEach(function (prefix) {
+        var els = card.querySelectorAll('[name^="' + prefix + '_"]');
+        els.forEach(function (el) { el.name = prefix + '_' + idx; });
+      });
+    });
+    updateTotals();
+  }
+
+  function addAddress() {
+    var count = document.querySelectorAll('.address-card').length;
+    if (count >= maxAddresses) {
+      alert('最多添加 ' + maxAddresses + ' 个地址');
+      return;
+    }
+    var div = document.createElement('div');
+    div.innerHTML = cardHtml(count);
+    list.appendChild(div.firstElementChild);
+    reindex();
+  }
+
+  if (list && template) {
+    reindex();
+    addBtn.addEventListener('click', addAddress);
+    list.addEventListener('click', function (e) {
+      var btn = e.target.closest('.remove-address');
+      if (!btn) return;
+      var card = btn.closest('.address-card');
+      var cards = Array.prototype.slice.call(document.querySelectorAll('.address-card'));
+      if (cards.length <= 1) return;
+      cards[cards.indexOf(card)].remove();
+      reindex();
+    });
+    list.addEventListener('change', updateTotals);
+    list.addEventListener('input', updateTotals);
+  }
+
+  // 防重复提交：提交成功路径禁用按钮，避免双击产生多单
+  var form = document.getElementById('order-form');
+  var submitBtn = document.getElementById('submit-btn');
+  if (form && submitBtn) {
+    form.addEventListener('submit', function () {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '提交中…';
+    });
+  }
+})();
+</script>
+{% endblock %}

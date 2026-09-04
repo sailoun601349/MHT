@@ -1,0 +1,5 @@
+# Kivi order management system dependencies (ASCII only)
+Flask>=3.0,<4
+Flask-SQLAlchemy>=3.1,<4
+Flask-Login>=0.6.3,<1
+gunicorn>=21.2,<23; platform_system != "Windows"

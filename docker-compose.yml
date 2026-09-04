@@ -1,0 +1,15 @@
+services:
+  kivi-order:
+    build: .
+    container_name: kivi-order
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-please-change-me}
+      ADMIN_PHONE: ${ADMIN_PHONE:-13185020250}
+      ADMIN_CODE: ${ADMIN_CODE:-sailoun}
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs

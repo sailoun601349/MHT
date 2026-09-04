@@ -1,0 +1,15 @@
+__pycache__/
+venv/
+.venv/
+data/
+uploads/
+backup/
+logs/
+.env
+*.db
+*.db-wal
+*.db-shm
+docs/
+.git/
+.gitignore
+.dockerignore

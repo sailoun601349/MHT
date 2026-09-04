@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}请求无效{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <div class="fs-1">⚠️</div>
+  <h4>请求无效</h4>
+  <p class="text-muted">{{ message or '请返回上一页刷新后重试' }}</p>
+  <a class="btn btn-primary" href="{{ url_for('main.index') }}">返回首页</a>
+</div>
+{% endblock %}

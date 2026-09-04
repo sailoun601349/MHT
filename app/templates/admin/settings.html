@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}个人设置{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-7 col-lg-6">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">👤 账号信息</h5>
+        <table class="table table-sm table-borderless mb-0">
+          <tbody>
+            <tr><th class="text-muted w-25">手机号</th><td>{{ current_user.phone }}</td></tr>
+            <tr><th class="text-muted">角色</th><td>{{ current_user.role_label }}</td></tr>
+            <tr><th class="text-muted">状态</th><td>{{ current_user.status_label }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-3">🔗 我的专属链接</h5>
+        {% if current_user.is_super %}
+        <div class="text-muted small">您使用根路径接单，无需专属短码。</div>
+        {% else %}
+        <div class="input-group mb-2">
+          <input type="text" class="form-control share-link-input" id="share-link" value="{{ share_url }}" readonly>
+          <button class="btn btn-outline-primary" type="button" id="copy-share-link">复制</button>
+        </div>
+        <div class="form-text mb-3">顾客通过此链接下单，订单即归属您的名下。</div>
+        <form method="post" action="{{ url_for('admin.update_share_code') }}" class="row g-2">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="col">
+            <input type="text" class="form-control" name="share_code" value="{{ current_user.share_code }}"
+                   pattern="[0-9]{4,6}" maxlength="6" placeholder="4-6 位数字短码">
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-outline-primary">自定义短码</button>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body p-4 d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="mb-1">🔑 登录密码</h6>
+          <div class="text-muted small">定期更换，保障账号安全</div>
+        </div>
+        <a class="btn btn-outline-primary" href="{{ url_for('admin.change_password') }}">修改密码</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var btn = document.getElementById('copy-share-link');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    var input = document.getElementById('share-link');
+    input.select();
+    try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+    btn.textContent = '已复制 ✓';
+    setTimeout(function () { btn.textContent = '复制'; }, 2000);
+  });
+})();
+</script>
+{% endblock %}

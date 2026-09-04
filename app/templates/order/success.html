@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}下单成功{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-7">
+    <div class="card shadow-sm text-center">
+      <div class="card-body p-4">
+        <div class="fs-1">🎉</div>
+        <h5 class="mb-1">下单成功</h5>
+        <p class="text-muted mb-4">请保存以下查询码，可随时查询全部 {{ orders|length }} 个地址的订单信息</p>
+
+        <div class="order-code-box mb-4">
+          <div class="text-muted small mb-1">您的查询码</div>
+          <div class="order-code fs-3" id="order-code">{{ phone }} + {{ query_code }}</div>
+          <button class="btn btn-outline-primary mt-2" id="copy-code" data-code="{{ phone }} + {{ query_code }}">复制查询码</button>
+        </div>
+
+        <div class="text-start small text-muted mb-3">
+          <div>下单手机号：{{ phone }}</div>
+          <div>订单顺序号：{{ query_code }}</div>
+          <div>地址数量：{{ orders|length }} 个</div>
+          <div class="fw-bold text-amount">订单总金额：¥{{ '%.2f' % group_total }}</div>
+        </div>
+
+        <div class="text-start">
+          <h6 class="mb-2">📦 收货地址清单</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th><th>收货人</th><th>收货地址</th><th>规格</th><th>数量</th><th>小计</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for o in orders %}
+                <tr>
+                  <td>{{ o.sub_no }}</td>
+                  <td>{{ o.receiver_name }}<br><small class="text-muted">{{ o.receiver_phone }}</small></td>
+                  <td>{{ o.address }}</td>
+                  <td>{{ o.spec_name }}</td>
+                  <td>{{ o.quantity }}</td>
+                  <td class="fw-bold">¥{{ '%.2f' % o.total_fee_yuan }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2 mt-4">
+          <a class="btn btn-primary" href="{{ url_for('order.query', phone=phone, code=query_code) }}">查看订单</a>
+          <a class="btn btn-outline-primary" href="{{ url_for('order.new_order', phone=phone) }}">再下一单</a>
+          <a class="btn btn-outline-secondary" href="{{ url_for('main.index') }}">返回首页</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

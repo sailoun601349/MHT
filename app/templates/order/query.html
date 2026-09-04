@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}订单查询{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-lg-7">
+    <div class="card shadow-sm mb-3">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="card-title mb-0">📦 订单查询</h5>
+          {% if orders|length > 1 %}
+          <span class="badge badge-group">共 {{ orders|length }} 个地址</span>
+          {% endif %}
+        </div>
+
+        <div class="order-code-box mb-3">
+          <div class="text-muted small">查询码</div>
+          <div class="order-code fs-5">{{ phone }} + {{ query_code }}</div>
+          <div class="small text-muted mt-1">地址数量：{{ orders|length }} 个 · 订单总金额：¥{{ '%.2f' % group_total }}</div>
+        </div>
+
+        {% if orders|length > 1 %}
+        <div class="text-center text-muted small mb-2">
+          手机端可直接左右滑动切换地址；也可使用下方按钮
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div id="order-switcher">
+      {% for o in orders %}
+      <div class="card shadow-sm order-slide {{ 'active' if loop.first }}">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">
+              {% if orders|length > 1 %}📍 地址 {{ o.sub_no }}{% else %}📍 订单详情{% endif %}
+            </h5>
+            <span class="badge badge-status-{{ o.status }}">{{ o.status_label }}</span>
+          </div>
+
+          <table class="table table-sm table-borderless mb-3">
+            <tbody>
+              <tr><th class="text-muted w-50">收货人</th><td>{{ o.receiver_name }} {{ o.receiver_phone }}</td></tr>
+              <tr><th class="text-muted">收货地址</th><td>{{ o.address }}</td></tr>
+              <tr><th class="text-muted">规格</th><td>{{ o.spec_name }} × {{ o.quantity }}</td></tr>
+              <tr><th class="text-muted">本地址费用</th><td class="fw-bold text-amount">¥{{ '%.2f' % o.total_fee_yuan }}</td></tr>
+              <tr><th class="text-muted">下单时间</th><td>{{ o.created_at }}</td></tr>
+            </tbody>
+          </table>
+
+          <h6 class="mt-4 mb-2 text-muted">🚚 物流信息</h6>
+          {% if o.status in ('shipped', 'completed') %}
+            <div class="bg-light rounded-3 p-3">
+              <div>快递公司：{{ o.express_company }}</div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span>快递单号：<span class="fw-bold">{{ o.express_no }}</span></span>
+                <button type="button" class="btn btn-sm btn-outline-primary copy-express"
+                        data-no="{{ o.express_no }}">复制单号</button>
+                <a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener"
+                   href="https://www.kuaidi100.com/chaxun?nu={{ o.express_no }}">查物流</a>
+              </div>
+              {% if o.photos %}
+              <div class="row g-2 mt-1">
+                {% for photo in o.photos %}
+                <div class="col-6">
+                  <a href="{{ url_for('uploaded_file', filename=photo.path) }}" target="_blank">
+                    <img src="{{ url_for('uploaded_file', filename=photo.path) }}"
+                         class="img-fluid rounded-3" alt="快递面单照片">
+                  </a>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="text-muted">待发货，暂无物流信息</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if orders|length > 1 %}
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <button class="btn btn-outline-primary" id="prev-order">‹ 上一单</button>
+        <span class="fw-bold" id="order-position">第 1 / {{ orders|length }} 个地址</span>
+        <button class="btn btn-outline-primary" id="next-order">下一单 ›</button>
+      </div>
+      <div class="text-center mt-2" id="order-dots">
+        {% for o in orders %}
+        <button type="button" class="order-dot {{ 'active' if loop.first }}"
+                data-index="{{ loop.index0 }}">{{ loop.index }}</button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="d-grid gap-2 mt-4">
+      <a class="btn btn-primary" href="{{ url_for('main.index') }}">返回首页</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('order.new_order', phone=phone) }}">再下一单</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var slides = document.querySelectorAll('.order-slide');
+  var count = slides.length;
+  if (count <= 1) return;
+
+  var current = 0;
+  var position = document.getElementById('order-position');
+  var prevBtn = document.getElementById('prev-order');
+  var nextBtn = document.getElementById('next-order');
+  var dots = document.querySelectorAll('.order-dot');
+
+  function show(i) {
+    if (i < 0 || i >= count) return;
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = i;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+    position.textContent = '第 ' + (current + 1) + ' / ' + count + ' 个地址';
+  }
+
+  function next() { show((current + 1) % count); }
+  function prev() { show((current - 1 + count) % count); }
+
+  prevBtn.addEventListener('click', prev);
+  nextBtn.addEventListener('click', next);
+  dots.forEach(function (dot, idx) { dot.addEventListener('click', function () { show(idx); }); });
+
+  // 移动端左右滑动切换
+  var startX = null;
+  var container = document.getElementById('order-switcher');
+  container.addEventListener('touchstart', function (e) {
+    startX = e.touches[0].clientX;
+  }, { passive: true });
+  container.addEventListener('touchend', function (e) {
+    if (startX === null) return;
+    var dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) { dx < 0 ? next() : prev(); }
+    startX = null;
+  }, { passive: true });
+})();
+
+// 复制快递单号
+(function () {
+  document.querySelectorAll('.copy-express').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var no = btn.getAttribute('data-no') || '';
+      function done() {
+        btn.textContent = '已复制 ✓';
+        setTimeout(function () { btn.textContent = '复制单号'; }, 2000);
+      }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = no;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+        document.body.removeChild(ta);
+        done();
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(no).then(done).catch(fallback);
+      } else {
+        fallback();
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

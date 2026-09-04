@@ -1,0 +1,640 @@
+/* ==========================================================================
+   猕猴桃订购 · 全局样式（Design Tokens + 组件覆盖）
+   基座：Bootstrap 5.3 + 自定义变量覆盖，无前端构建工具
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. 设计令牌 Design Tokens
+   -------------------------------------------------------------------------- */
+:root {
+  /* 品牌色（猕猴桃绿） */
+  --kiwi-50: #EAF3EC;      /* 主色·浅：选中态底、浅绿背景 */
+  --kiwi-tint: #F4F9F5;    /* 主色·更浅：区块底、总费用底 */
+  --kiwi: #3D8B5F;         /* 主色：主按钮、品牌、主链接 */
+  --kiwi-dark: #2E6B47;    /* 主色·深：hover/按压、金额、深绿文字 */
+  --kiwi-accent: #E08A3C;  /* 强调：关键 CTA、点缀 */
+
+  /* 文字 / 边框 / 背景 */
+  --text: #1F2937;
+  --text-muted: #6B7280;
+  --border: #E5E7EB;
+  --bg: #F6F8F6;
+
+  /* 阴影（仅浮起感，全局不用渐变） */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, .06);
+  --shadow-pop: 0 10px 24px rgba(0, 0, 0, .12);
+
+  /* 语义色（订单状态 / 操作反馈） */
+  --success: #16A34A;
+  --success-ink: #14532D;
+  --warning: #D97706;
+  --warning-ink: #92400E;
+  --info: #2563EB;
+  --info-ink: #185FA5;
+  --danger: #DC2626;
+  --danger-ink: #991B1B;
+  --neutral: #9CA3AF;
+  --neutral-ink: #4B5563;
+
+  /* ---- Bootstrap 变量覆盖（最小侵入） ---- */
+  --bs-primary: #3D8B5F;
+  --bs-primary-rgb: 61, 139, 95;
+  --bs-success: #16A34A;
+  --bs-warning: #D97706;
+  --bs-danger: #DC2626;
+  --bs-info: #2563EB;
+  --bs-secondary: #9CA3AF;
+  --bs-body-font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --bs-body-bg: #F6F8F6;
+  --bs-body-color: #1F2937;
+  --bs-secondary-color: #6B7280;   /* .text-muted 次文 */
+  --bs-heading-color: #1F2937;
+  --bs-border-color: #E5E7EB;
+  --bs-border-radius: 0.5rem;      /* 8px  */
+  --bs-border-radius-lg: 0.75rem;  /* 12px */
+  --bs-border-radius-xl: 1rem;     /* 16px */
+}
+
+/* --------------------------------------------------------------------------
+   2. 基础布局
+   -------------------------------------------------------------------------- */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg);
+  color: var(--text);
+  font-weight: 400;
+}
+main { flex: 1; }
+
+/* 中文字重仅 400 / 500 两档，避免发虚 */
+h1, h2, h3, h4, h5, h6 { font-weight: 500; }
+h5 { font-size: 18px; }   /* 页面标题 18px/500 */
+h6 { font-size: 15px; }   /* 卡片/区块标题 15px/500 */
+.card-title { font-size: 15px; font-weight: 500; }
+
+a { color: var(--kiwi); }
+a:hover { color: var(--kiwi-dark); }
+
+/* --------------------------------------------------------------------------
+   3. 顶部导航 & 底栏
+   -------------------------------------------------------------------------- */
+.navbar {
+  background-color: #fff;
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}
+.navbar-brand {
+  color: var(--kiwi) !important;
+  font-size: 18px;
+  font-weight: 500;
+}
+.navbar-brand:hover { color: var(--kiwi-dark) !important; }
+.navbar .nav-link,
+.navbar .btn { font-size: 14px; }
+
+footer {
+  color: var(--text-muted);
+  font-size: 12px;
+  background-color: transparent;
+  border-top: 1px solid var(--border);
+}
+
+/* --------------------------------------------------------------------------
+   4. 卡片
+   -------------------------------------------------------------------------- */
+.card {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+  background-color: #fff;
+}
+.card-body { padding: 1rem; }
+.card-header {
+  background-color: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.card h6, .card .card-title {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* 统计卡片（订单管理顶部） */
+.stat-card {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-card);
+}
+.stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: .25rem;
+}
+.stat-value {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+/* --------------------------------------------------------------------------
+   5. 按钮
+   -------------------------------------------------------------------------- */
+.btn {
+  border-radius: 0.75rem;
+  min-height: 48px;
+  font-weight: 500;
+  transition: transform .08s ease, background-color .12s ease,
+    border-color .12s ease, box-shadow .12s ease;
+}
+.btn-lg { min-height: 48px; }
+/* 次级小按钮：圆角 8px，触控略缩但保留足够命中区 */
+.btn-sm {
+  border-radius: 0.5rem;
+  min-height: 36px;
+  padding: .3rem .65rem;
+  font-weight: 400;
+}
+
+/* 主按钮（品牌绿） */
+.btn-primary {
+  --bs-btn-bg: var(--kiwi);
+  --bs-btn-border-color: var(--kiwi);
+  --bs-btn-hover-bg: var(--kiwi-dark);
+  --bs-btn-hover-border-color: var(--kiwi-dark);
+  --bs-btn-active-bg: var(--kiwi-dark);
+  --bs-btn-active-border-color: var(--kiwi-dark);
+  --bs-btn-disabled-bg: var(--kiwi);
+  --bs-btn-disabled-border-color: var(--kiwi);
+  --bs-btn-focus-shadow-rgb: 61, 139, 95;
+}
+.btn-primary:hover { transform: translateY(-1px); }
+
+.btn-outline-primary {
+  --bs-btn-color: var(--kiwi);
+  --bs-btn-border-color: var(--kiwi);
+  --bs-btn-hover-bg: var(--kiwi);
+  --bs-btn-hover-border-color: var(--kiwi);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: var(--kiwi-dark);
+  --bs-btn-active-border-color: var(--kiwi-dark);
+  --bs-btn-active-color: #fff;
+  --bs-btn-focus-shadow-rgb: 61, 139, 95;
+}
+
+/* 成功 / 危险 / 警告 / 信息 */
+.btn-success {
+  --bs-btn-bg: var(--success);
+  --bs-btn-border-color: var(--success);
+  --bs-btn-hover-bg: #148C40;
+  --bs-btn-hover-border-color: #148C40;
+  --bs-btn-active-bg: #148C40;
+  --bs-btn-active-border-color: #148C40;
+  --bs-btn-focus-shadow-rgb: 22, 163, 74;
+}
+.btn-outline-success {
+  --bs-btn-color: var(--success);
+  --bs-btn-border-color: var(--success);
+  --bs-btn-hover-bg: var(--success);
+  --bs-btn-hover-border-color: var(--success);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: #148C40;
+  --bs-btn-active-border-color: #148C40;
+  --bs-btn-active-color: #fff;
+  --bs-btn-focus-shadow-rgb: 22, 163, 74;
+}
+.btn-danger {
+  --bs-btn-bg: var(--danger);
+  --bs-btn-border-color: var(--danger);
+  --bs-btn-hover-bg: #B91C1C;
+  --bs-btn-hover-border-color: #B91C1C;
+  --bs-btn-active-bg: #B91C1C;
+  --bs-btn-active-border-color: #B91C1C;
+  --bs-btn-focus-shadow-rgb: 220, 38, 38;
+}
+.btn-outline-danger {
+  --bs-btn-color: var(--danger);
+  --bs-btn-border-color: var(--danger);
+  --bs-btn-hover-bg: var(--danger);
+  --bs-btn-hover-border-color: var(--danger);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: #B91C1C;
+  --bs-btn-active-border-color: #B91C1C;
+  --bs-btn-active-color: #fff;
+  --bs-btn-focus-shadow-rgb: 220, 38, 38;
+}
+.btn-warning {
+  --bs-btn-bg: var(--warning);
+  --bs-btn-border-color: var(--warning);
+  --bs-btn-hover-bg: #B45309;
+  --bs-btn-hover-border-color: #B45309;
+  --bs-btn-active-bg: #B45309;
+  --bs-btn-active-border-color: #B45309;
+  --bs-btn-focus-shadow-rgb: 217, 119, 6;
+}
+.btn-outline-warning {
+  --bs-btn-color: var(--warning);
+  --bs-btn-border-color: var(--warning);
+  --bs-btn-hover-bg: var(--warning);
+  --bs-btn-hover-border-color: var(--warning);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-bg: #B45309;
+  --bs-btn-active-border-color: #B45309;
+  --bs-btn-active-color: #fff;
+  --bs-btn-focus-shadow-rgb: 217, 119, 6;
+}
+.btn-info {
+  --bs-btn-bg: var(--info);
+  --bs-btn-border-color: var(--info);
+  --bs-btn-hover-bg: #1D4ED8;
+  --bs-btn-hover-border-color: #1D4ED8;
+  --bs-btn-active-bg: #1D4ED8;
+  --bs-btn-active-border-color: #1D4ED8;
+  --bs-btn-focus-shadow-rgb: 37, 99, 235;
+}
+
+/* 次按钮（白底 + 边框 + 深色文字） */
+.btn-secondary,
+.btn-outline-secondary {
+  --bs-btn-color: var(--text);
+  --bs-btn-border-color: var(--border);
+  --bs-btn-hover-bg: #F3F4F6;
+  --bs-btn-hover-border-color: #D1D5DB;
+  --bs-btn-hover-color: var(--text);
+  --bs-btn-active-bg: #F3F4F6;
+  --bs-btn-active-border-color: #D1D5DB;
+  --bs-btn-active-color: var(--text);
+  --bs-btn-focus-shadow-rgb: 156, 163, 175;
+}
+.btn-secondary {
+  --bs-btn-bg: #fff;
+  --bs-btn-active-bg: #F3F4F6;
+}
+.btn-outline-secondary { --bs-btn-bg: transparent; }
+
+/* 强调按钮（关键转化，可选） */
+.btn-accent {
+  --bs-btn-bg: var(--kiwi-accent);
+  --bs-btn-border-color: var(--kiwi-accent);
+  --bs-btn-hover-bg: #C8752E;
+  --bs-btn-hover-border-color: #C8752E;
+  --bs-btn-active-bg: #C8752E;
+  --bs-btn-active-border-color: #C8752E;
+  --bs-btn-color: #fff;
+  --bs-btn-focus-shadow-rgb: 224, 138, 60;
+  color: #fff;
+}
+
+/* disabled 态 */
+.btn:disabled, .btn.disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* 焦点环（无障碍） */
+.btn:focus-visible, .form-control:focus-visible, .form-select:focus-visible,
+.nav-link:focus-visible, .page-link:focus-visible {
+  outline: 2px solid var(--kiwi);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   6. 表单输入
+   -------------------------------------------------------------------------- */
+.form-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: .4rem;
+}
+.form-control,
+.form-select {
+  min-height: 48px;
+  border-radius: 0.5rem;
+  border-color: var(--border);
+  font-size: 14px;
+  color: var(--text);
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--kiwi);
+  box-shadow: 0 0 0 0.2rem rgba(61, 139, 95, .15);
+}
+.form-control::placeholder { color: var(--neutral); }
+.form-text { font-size: 12px; color: var(--text-muted); }
+.form-control:disabled {
+  background-color: var(--kiwi-tint);
+  color: var(--text-muted);
+}
+textarea.form-control { min-height: 48px; }
+
+/* --------------------------------------------------------------------------
+   7. 状态 / 角色 / 信息徽章（药丸 + 圆点）
+   -------------------------------------------------------------------------- */
+.badge {
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+.badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex: none;
+}
+
+/* 订单状态徽章（底 / 文字 / 圆点 三要素） */
+.badge-status-created {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+.badge-status-created::before { background-color: #D97706; }
+.badge-status-shipped {
+  background-color: #E6F1FB;
+  color: #185FA5;
+}
+.badge-status-shipped::before { background-color: #2563EB; }
+.badge-status-completed {
+  background-color: #E1F5EE;
+  color: #0F6E56;
+}
+.badge-status-completed::before { background-color: #16A34A; }
+.badge-status-cancelled {
+  background-color: #F1EFE8;
+  color: #5F5E5A;
+}
+.badge-status-cancelled::before { background-color: #9CA3AF; }
+
+/* 管理员角色徽章 */
+.badge-role-super {
+  background-color: #FDEFE2;
+  color: #9A4A13;
+}
+.badge-role-super::before { background-color: var(--kiwi-accent); }
+.badge-role-admin {
+  background-color: #F3F4F6;
+  color: #4B5563;
+}
+.badge-role-admin::before { background-color: #9CA3AF; }
+
+/* 管理员启用/停用徽章 */
+.badge-active {
+  background-color: #E1F5EE;
+  color: #0F6E56;
+}
+.badge-active::before { background-color: #16A34A; }
+.badge-inactive {
+  background-color: #F1EFE8;
+  color: #5F5E5A;
+}
+.badge-inactive::before { background-color: #9CA3AF; }
+
+/* 信息辅助徽章（子单号 / 多址等，无圆点） */
+.badge-sub,
+.badge-group {
+  background-color: #F3F4F6;
+  color: #6B7280;
+  gap: 0;
+}
+.badge-sub::before,
+.badge-group::before { display: none; }
+.badge-group {
+  background-color: #E6F1FB;
+  color: #185FA5;
+}
+
+/* --------------------------------------------------------------------------
+   8. 状态筛选（药丸 tab）
+   -------------------------------------------------------------------------- */
+.nav-pills { -webkit-overflow-scrolling: touch; gap: .5rem; }
+.nav-pills .nav-link {
+  white-space: nowrap;
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: .45rem 1rem;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  background-color: #fff;
+}
+.nav-pills .nav-link:hover { color: var(--kiwi); border-color: var(--kiwi); }
+.nav-pills .nav-link.active {
+  background-color: var(--kiwi);
+  border-color: var(--kiwi);
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   9. 表格
+   -------------------------------------------------------------------------- */
+.table { font-size: 14px; color: var(--text); }
+.table thead th {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  background-color: #F9FAFB;
+  border-bottom-color: var(--border);
+}
+.table tbody th { font-weight: 400; }
+.table td { vertical-align: middle; }
+
+/* 责任人高亮行 */
+.owner-row td,
+.owner-highlight {
+  background-color: var(--kiwi-tint) !important;
+  font-weight: 500;
+  color: var(--kiwi-dark);
+}
+
+/* --------------------------------------------------------------------------
+   10. 查询码 / 专属链接
+   -------------------------------------------------------------------------- */
+.order-code-box {
+  background-color: var(--kiwi-tint);
+  border: 1px dashed var(--kiwi);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+.order-code {
+  letter-spacing: .14em;
+  font-weight: 500;
+  color: var(--kiwi-dark);
+  word-break: break-all;
+}
+.share-link-box {
+  background-color: var(--kiwi-tint);
+  border: 1px solid var(--kiwi-50);
+  border-radius: 0.75rem;
+  padding: .75rem 1rem;
+  font-size: 14px;
+  color: var(--kiwi-dark);
+  word-break: break-all;
+}
+.share-link-input {
+  background-color: var(--kiwi-tint);
+  color: var(--kiwi-dark);
+  font-weight: 500;
+}
+.share-link-input:focus {
+  background-color: #fff;
+  color: var(--text);
+}
+
+/* --------------------------------------------------------------------------
+   11. 下单页（地址卡片 / 规格 / 费用）
+   -------------------------------------------------------------------------- */
+.address-card .card-header {
+  font-size: 14px;
+  font-weight: 500;
+}
+.remove-address { visibility: hidden; }
+
+/* 规格选中态卡片（sr-only 视觉隐藏原生 radio，保留键盘焦点与读屏，用 .spec-card 做可点选卡片） */
+.spec-group { flex-wrap: wrap; }
+.spec-option { cursor: pointer; margin: 0; }
+.spec-option .spec-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.spec-card {
+  display: block;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-align: center;
+  font-weight: 500;
+  color: var(--text);
+  background-color: #fff;
+  transition: border-color .15s ease, background .15s ease;
+}
+.spec-option:hover .spec-card {
+  border-color: var(--kiwi);
+}
+.spec-radio:checked + .spec-card {
+  background: #EAF3EC;
+  border-color: #3D8B5F;
+  color: #2E6B47;
+}
+.spec-radio:checked + .spec-card small {
+  color: #2E6B47 !important;
+}
+.spec-option .spec-radio:focus-visible + .spec-card {
+  outline: 2px solid #3D8B5F;
+  outline-offset: 2px;
+}
+
+.address-subtotal-box {
+  background-color: var(--kiwi-tint);
+  border-radius: 0.5rem;
+  padding: .5rem .75rem;
+  text-align: right;
+}
+
+.total-box {
+  background-color: var(--kiwi-tint);
+  border: 1px solid var(--kiwi-50);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-align: center;
+}
+.total-box .total-amount {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--kiwi-dark);
+}
+
+/* 金额强调 */
+.text-amount { color: var(--kiwi-dark); }
+.text-kiwi { color: var(--kiwi); }
+.text-kiwi-dark { color: var(--kiwi-dark); }
+.bg-kiwi-tint { background-color: var(--kiwi-tint); }
+.bg-kiwi-50 { background-color: var(--kiwi-50); }
+
+/* --------------------------------------------------------------------------
+   12. 登录 / 改密（居中窄卡片）
+   -------------------------------------------------------------------------- */
+.auth-card {
+  max-width: 480px;
+  margin: 0 auto;
+}
+.auth-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--kiwi);
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   13. 管理员卡片栅格
+   -------------------------------------------------------------------------- */
+.admin-card .admin-phone {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+}
+.admin-card .admin-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.admin-card .admin-meta .label {
+  color: var(--neutral);
+}
+
+/* --------------------------------------------------------------------------
+   14. 响应式：手机卡片视图 / 桌面表格视图
+   -------------------------------------------------------------------------- */
+@media (max-width: 991.98px) {
+  .table th, .table td { font-size: 13px; }
+}
+@media (max-width: 767.98px) {
+  .card-body { padding: 1rem; }
+  .total-box .total-amount { font-size: 22px; }
+}
+
+/* 超大屏居中容器 */
+@media (min-width: 1280px) {
+  main.container { max-width: 1180px; }
+}
+
+/* 多地址订单切换（查询页） */
+.order-slide { display: none; }
+.order-slide.active { display: block; }
+
+/* 查询页分页圆点 */
+.order-dot {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50% !important;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  background-color: #fff;
+  color: var(--text-muted);
+}
+.order-dot.active {
+  background-color: var(--kiwi);
+  border-color: var(--kiwi);
+  color: #fff;
+}

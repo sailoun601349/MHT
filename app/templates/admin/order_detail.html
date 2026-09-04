@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}订单详情{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-8">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h5 class="mb-1">📦 {{ order.display_code }}</h5>
+        <span class="badge badge-status-{{ order.status }}">{{ order.status_label }}</span>
+      </div>
+      <a href="{{ url_for('admin.orders') }}" class="btn btn-sm btn-outline-secondary">← 返回列表</a>
+    </div>
+
+    {% if group_size > 1 %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
+        <span class="text-muted small">同一查询码：第 {{ group_index }}/{{ group_size }} 个地址 · 组总价 ¥{{ '%.2f' % group_total }}</span>
+        <div class="ms-auto">
+          {% for g in group_orders %}
+          <a href="{{ url_for('admin.order_detail', order_id=g.id) }}"
+             class="btn btn-sm {{ 'btn-primary' if g.id == order.id else 'btn-outline-primary' }} mb-1">#{{ g.sub_no }}</a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-3">
+      <!-- 订单信息 -->
+      <div class="col-12 col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <h6 class="mb-0">订单信息</h6>
+              <span class="badge badge-status-{{ order.status }}">{{ order.status_label }}</span>
+            </div>
+            <table class="table table-sm table-borderless mb-0">
+              <tbody>
+                <tr><th class="text-muted">下单手机号</th><td>{{ order.phone }}</td></tr>
+                <tr class="owner-row"><th class="text-muted">责任人</th><td>{{ order.owner_phone or '—' }}</td></tr>
+                <tr><th class="text-muted">组内地址</th><td>#{{ order.sub_no }}{% if group_size > 1 %} / 共 {{ group_size }} 个{% endif %}</td></tr>
+                <tr><th class="text-muted">收货人</th><td>{{ order.receiver_name }} {{ order.receiver_phone }}</td></tr>
+                <tr><th class="text-muted">地址</th><td>{{ order.address }}</td></tr>
+                <tr><th class="text-muted">规格</th><td>{{ order.spec_name }} × {{ order.quantity }}</td></tr>
+                <tr><th class="text-muted">本地址费用</th><td class="fw-bold text-amount">¥{{ '%.2f' % order.total_fee_yuan }}</td></tr>
+                <tr><th class="text-muted">下单时间</th><td>{{ order.created_at }}</td></tr>
+                {% if order.note %}
+                <tr><th class="text-muted">备注 / 原因</th><td class="text-danger">{{ order.note }}</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+
+            {% if order.express_no %}
+            <hr>
+            <h6 class="mb-2">当前快递信息</h6>
+            <div>公司：{{ order.express_company }}</div>
+            <div>单号：{{ order.express_no }}</div>
+            {% if order.photos %}
+            <div class="row g-2 mt-1">
+              {% for photo in order.photos %}
+              <div class="col-6 col-md-4">
+                <a href="{{ url_for('uploaded_file', filename=photo.path) }}" target="_blank">
+                  <img src="{{ url_for('uploaded_file', filename=photo.path) }}" class="img-fluid rounded-3 w-100" alt="面单照片">
+                </a>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 发货操作 -->
+      <div class="col-12 col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            {% if order.can_update_express() %}
+            <h6 class="mb-3">📸 面单照片（最多 {{ order.max_photos }} 张）</h6>
+            <form method="post" action="{{ url_for('admin.upload_photos', order_id=order.id) }}" enctype="multipart/form-data" class="mb-3">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <div class="d-flex gap-2">
+                <label class="btn btn-outline-primary">
+                  📷 拍照上传
+                  <input type="file" name="photo" accept="image/*" capture="environment" class="d-none" onchange="this.form.submit()">
+                </label>
+                <label class="btn btn-outline-primary">
+                  🖼 选择照片
+                  <input type="file" name="photos" accept="image/*" multiple class="d-none" onchange="this.form.submit()">
+                </label>
+              </div>
+              <div class="form-text mt-1">支持 jpg/png/webp，≤10MB；共可上传 {{ order.max_photos }} 张</div>
+            </form>
+
+            {% if order.photos %}
+            <div class="row g-2 mb-3">
+              {% for photo in order.photos %}
+              <div class="col-6 col-md-4">
+                <div class="position-relative">
+                  <a href="{{ url_for('uploaded_file', filename=photo.path) }}" target="_blank">
+                    <img src="{{ url_for('uploaded_file', filename=photo.path) }}" class="img-fluid rounded-3 w-100" alt="面单照片">
+                  </a>
+                  <form method="post" action="{{ url_for('admin.delete_photo', order_id=order.id, photo_id=photo.id) }}" class="position-absolute top-0 end-0 m-1">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-sm rounded-circle" title="删除此照片" onclick="return confirm('确定删除这张照片吗？');">×</button>
+                  </form>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-muted small mb-3">暂无照片，请先上传面单照片</div>
+            {% endif %}
+
+            <hr>
+            <h6 class="mb-3">🚚 发货 / 更新快递</h6>
+            <form method="post" action="{{ url_for('admin.ship', order_id=order.id) }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <div class="mb-3">
+                <label class="form-label">快递公司</label>
+                <select class="form-select" name="express_company" required>
+                  <option value="">-- 选择 --</option>
+                  {% for c in companies %}
+                  <option value="{{ c }}" {{ 'selected' if order.express_company == c }}>{{ c }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">快递单号</label>
+                <input type="text" class="form-control" name="express_no" value="{{ order.express_no }}"
+                       placeholder="输入或粘贴快递单号" required>
+              </div>
+              <button class="btn btn-primary w-100">{{ '更新快递信息' if order.status == 'shipped' else '保存发货信息' }}</button>
+            </form>
+
+            {% if group_size > 1 %}
+            <hr>
+            <h6 class="mb-3">🚚 整组发货（{{ group_size }} 个地址）</h6>
+            <ul class="list-unstyled small text-muted mb-3">
+              {% for g in group_orders %}
+              <li>#{{ g.sub_no }} {{ g.receiver_name }} · {{ g.address }}</li>
+              {% endfor %}
+            </ul>
+            <form method="post" action="{{ url_for('admin.ship_group_route', order_id=order.id) }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <div class="mb-3">
+                <label class="form-label">快递公司</label>
+                <select class="form-select" name="express_company" required>
+                  <option value="">-- 选择 --</option>
+                  {% for c in companies %}
+                  <option value="{{ c }}">{{ c }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">快递单号</label>
+                <input type="text" class="form-control" name="express_no"
+                       placeholder="快递单号（整组共用）" required>
+              </div>
+              <button class="btn btn-primary w-100"
+                      onclick="return confirm('确定整组发货（共 {{ group_size }} 个地址）吗？');">整组发货</button>
+            </form>
+            {% endif %}
+            {% else %}
+            <h6 class="mb-3">🚚 物流信息</h6>
+            {% if order.express_no %}
+              <div>公司：{{ order.express_company }}</div>
+              <div>单号：{{ order.express_no }}</div>
+              {% if order.photos %}
+              <div class="row g-2 mt-1">
+                {% for photo in order.photos %}
+                <div class="col-6 col-md-4">
+                  <a href="{{ url_for('uploaded_file', filename=photo.path) }}" target="_blank">
+                    <img src="{{ url_for('uploaded_file', filename=photo.path) }}" class="img-fluid rounded-3 w-100" alt="面单照片">
+                  </a>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+            {% else %}
+              <div class="text-muted">当前状态不可发货，暂无物流信息。</div>
+            {% endif %}
+            {% endif %}
+
+            <hr>
+            <h6 class="mb-2">状态操作</h6>
+            {% if order.available_actions %}
+            <div class="d-flex flex-wrap gap-2">
+              {% if 'completed' in order.available_actions %}
+              <form method="post" action="{{ url_for('admin.change_status', order_id=order.id) }}" class="m-0 confirm-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="status" value="completed">
+                <button class="btn btn-success btn-sm">标记完成</button>
+              </form>
+              {% endif %}
+              {% if 'cancelled' in order.available_actions %}
+              <div class="w-100">
+                <form method="post" action="{{ url_for('admin.change_status', order_id=order.id) }}" class="m-0 confirm-form">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="status" value="cancelled">
+                  <div class="input-group input-group-sm mb-1">
+                    <input type="text" class="form-control" name="remark" placeholder="取消原因（必填）" required>
+                    <button class="btn btn-outline-danger">取消订单</button>
+                  </div>
+                </form>
+              </div>
+              {% endif %}
+              {% if 'created' in order.available_actions %}
+              <div class="w-100">
+                <form method="post" action="{{ url_for('admin.change_status', order_id=order.id) }}" class="m-0 confirm-form">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="status" value="created">
+                  <div class="input-group input-group-sm mb-1">
+                    <input type="text" class="form-control" name="remark" placeholder="退回原因（必填）" required>
+                    <button class="btn btn-outline-warning">退回待发货</button>
+                  </div>
+                </form>
+              </div>
+              {% endif %}
+            </div>
+            {% else %}
+            <div class="alert alert-secondary small mb-0">该订单已完结或已取消，状态不可变更。</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if logs %}
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="mb-3">🕓 操作记录</h6>
+          <ul class="list-group list-group-flush">
+            {% for log in logs %}
+            <li class="list-group-item px-0">
+              <div class="d-flex justify-content-between align-items-center">
+                <span>
+                  {{ log.action_label }}
+                  {% if log.action == 'ship' %}
+                    ：{{ log.remark }}
+                  {% else %}
+                    ：{{ log.from_status_label }} → {{ log.to_status_label }}
+                    {% if log.remark %}（{{ log.remark }}）{% endif %}
+                  {% endif %}
+                </span>
+                <small class="text-muted">{{ log.operator_phone or '—' }}</small>
+              </div>
+              <small class="text-muted">{{ log.created_at }}</small>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

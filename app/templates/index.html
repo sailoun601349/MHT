@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}首页 - 猕猴桃订购{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-6 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="text-center mb-4">
+          <h1 class="h4 mb-1 text-kiwi-dark">🥝 猕猴桃订购</h1>
+          <p class="text-muted mb-0">太白山 · 产地直发</p>
+        </div>
+        <form method="post" action="{{ url_for('main.enter') }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="mb-3">
+            <label class="form-label" for="phone-input">手机号</label>
+            <input type="tel" class="form-control form-control-lg" id="phone-input" name="phone"
+                   inputmode="numeric" maxlength="11" pattern="1[3-9][0-9]{9}"
+                   placeholder="请输入 11 位手机号" required autofocus>
+            <div class="form-text">仅用手机号即可下单；填查询码可查询已有订单</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label" for="code-input">查询码（选填）</label>
+            <input type="text" class="form-control form-control-lg" id="code-input" name="code"
+                   inputmode="numeric" maxlength="6" pattern="[0-9]{3,6}"
+                   placeholder="如 001">
+          </div>
+          <button class="btn btn-primary btn-lg w-100">进入下单</button>
+        </form>
+        <p class="text-center mt-3 mb-0">
+          <a href="{{ url_for('admin.login') }}" class="small text-muted text-decoration-none">管理员入口</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

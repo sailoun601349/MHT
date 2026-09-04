@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+venv.win-backup/
+.venv/
+
+# 数据与上传
+data/
+uploads/
+backup/
+logs/
+
+# 环境与密钥
+.env
+*.db
+*.db-wal
+*.db-shm
+
+# IDE / 工具工作目录
+.idea/
+.vscode/
+.workbuddy/
+.jspace/

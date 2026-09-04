@@ -160,6 +160,10 @@ def create_app(config_class=Config):
 
         run_schema_migrations(app)
         _seed(app)
+        # 内置规格 seed 与自愈（须在 _seed 之后：需超管存在）
+        from .services.spec_service import ensure_spec_defaults
+
+        ensure_spec_defaults()
         if not os.environ.get("ADMIN_CODE"):
             app.logger.warning("未通过环境变量 ADMIN_CODE 提供超级管理员初始登录密码，当前使用配置文件内置默认值，生产环境建议用 flask reset-admin 修改！")
 

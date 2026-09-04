@@ -58,15 +58,24 @@ def create_admin(phone: str, name: str, password: str, created_by: str) -> Admin
     admin.must_change_password = True
     db.session.add(admin)
     db.session.commit()
+    # 新管理员创建后同步内置规格默认适用（5斤装/10斤装）
+    from .spec_service import sync_builtin_for_admin
+
+    sync_builtin_for_admin(admin)
     return admin
 
 
 def delete_admin(admin: Admin) -> None:
-    """删除管理员：名下订单转移给超级管理员后删除（超级管理员不可删除）。"""
+    """删除管理员：名下订单转移给超级管理员后删除（超级管理员不可删除）。
+
+    规格联动（决策①）：其创建的自定义规格移交超管，并清除其全部 spec_admins
+    适用关系（与订单转移一致，由 spec_service.on_admin_deleted 处理）。
+    """
     if admin.is_super:
         raise ValueError("超级管理员账号不可删除")
 
     from .order_service import get_super_admin
+    from .spec_service import on_admin_deleted
 
     super_admin = get_super_admin()
     # 兜底：极端情况下无超管时，订单归属清空
@@ -76,5 +85,6 @@ def delete_admin(admin: Admin) -> None:
         .where(Order.owner_admin_id == admin.id)
         .values(owner_admin_id=target_id)
     )
+    on_admin_deleted(admin, super_admin)
     db.session.delete(admin)
     db.session.commit()

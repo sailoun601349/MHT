@@ -53,6 +53,8 @@ class Order(db.Model):
     receiver_name = db.Column(db.String(100), nullable=False)
     receiver_phone = db.Column(db.String(20), nullable=False)
     address = db.Column(db.String(500), nullable=False)   # 完整收货地址（省市区+街道门牌）
+    # 规格 id 快照（纯审计用，不加 FK：删除规格后历史订单不受影响）
+    spec_id = db.Column(db.Integer, nullable=True)
     spec_name = db.Column(db.String(50), nullable=False)
     spec_price = db.Column(db.Integer, nullable=False)   # 单价（分）
     quantity = db.Column(db.Integer, nullable=False)

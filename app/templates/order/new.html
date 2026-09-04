@@ -47,24 +47,29 @@
                             placeholder="完整收货地址（省市区 + 街道门牌），可直接粘贴"></textarea>
                 </div>
 
-                <div class="row g-2">
-                  <div class="col-6">
-                    <label class="form-label">规格 <span class="text-danger">*</span></label>
-                    <div class="spec-group d-flex gap-2">
-                      {% for spec in specs %}
-                      <label class="spec-option flex-fill">
-                        <input type="radio" class="spec-radio" name="spec_name_0" value="{{ spec.name }}"
-                               data-price="{{ spec.price }}" {% if loop.first %}checked{% endif %}>
-                        <span class="spec-card">{{ spec.name }}<small class="d-block text-muted">¥{{ spec.price }}</small></span>
-                      </label>
-                      {% endfor %}
-                    </div>
+                <div class="mb-3">
+                  <label class="form-label">规格 <span class="text-danger">*</span></label>
+                  <div class="spec-list">
+                    {% for spec in specs %}
+                    <label class="spec-option">
+                      <input type="radio" class="spec-radio" name="spec_id_0" value="{{ spec.id }}"
+                             data-price="{{ '%.2f' % spec.price_yuan }}" {% if loop.first %}checked{% endif %}>
+                      <span class="spec-card">
+                        <span class="spec-name">{{ spec.name }}</span>
+                        <span class="spec-price">¥{{ '%.2f' % spec.price_yuan }}</span>
+                      </span>
+                    </label>
+                    {% else %}
+                    <div class="text-muted small py-2">暂无可售规格，请联系管理员</div>
+                    {% endfor %}
                   </div>
-                  <div class="col-6">
-                    <label class="form-label">数量 <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control quantity-input" name="quantity_0"
-                           min="1" max="99" value="1" required inputmode="numeric">
-                  </div>
+                  <div class="form-text">请选择规格（不同规格价格不同，按规格计价）</div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">数量 <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control quantity-input" name="quantity_0"
+                         min="1" max="99" value="1" required inputmode="numeric">
                 </div>
 
                 <div class="address-subtotal-box mt-3">
@@ -112,24 +117,28 @@
                   placeholder="完整收货地址（省市区 + 街道门牌），可直接粘贴"></textarea>
       </div>
 
-      <div class="row g-2">
-        <div class="col-6">
-          <label class="form-label">规格 <span class="text-danger">*</span></label>
-          <div class="spec-group d-flex gap-2">
-            {% for spec in specs %}
-            <label class="spec-option flex-fill">
-              <input type="radio" class="spec-radio" name="spec_name_{I}" value="{{ spec.name }}"
-                     data-price="{{ spec.price }}" {% if loop.first %}checked{% endif %}>
-              <span class="spec-card">{{ spec.name }}<small class="d-block text-muted">¥{{ spec.price }}</small></span>
-            </label>
-            {% endfor %}
-          </div>
+      <div class="mb-3">
+        <label class="form-label">规格 <span class="text-danger">*</span></label>
+        <div class="spec-list">
+          {% for spec in specs %}
+          <label class="spec-option">
+            <input type="radio" class="spec-radio" name="spec_id_{I}" value="{{ spec.id }}"
+                   data-price="{{ '%.2f' % spec.price_yuan }}" {% if loop.first %}checked{% endif %}>
+            <span class="spec-card">
+              <span class="spec-name">{{ spec.name }}</span>
+              <span class="spec-price">¥{{ '%.2f' % spec.price_yuan }}</span>
+            </span>
+          </label>
+          {% else %}
+          <div class="text-muted small py-2">暂无可售规格，请联系管理员</div>
+          {% endfor %}
         </div>
-        <div class="col-6">
-          <label class="form-label">数量 <span class="text-danger">*</span></label>
-          <input type="number" class="form-control quantity-input" name="quantity_{I}"
-                 min="1" max="99" value="1" required inputmode="numeric">
-        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">数量 <span class="text-danger">*</span></label>
+        <input type="number" class="form-control quantity-input" name="quantity_{I}"
+               min="1" max="99" value="1" required inputmode="numeric">
       </div>
 
       <div class="address-subtotal-box mt-3">
@@ -150,7 +159,8 @@
   var totalDisplay = document.getElementById('total-display');
   var template = document.getElementById('address-template');
   var maxAddresses = {{ max_addresses }};
-  var FIELD_PREFIXES = ['receiver_name', 'receiver_phone', 'address', 'spec_name', 'quantity'];
+  // 多地址字段前缀：规格改由 spec_id 隐藏 radio 提交（spec_name 已退役）
+  var FIELD_PREFIXES = ['receiver_name', 'receiver_phone', 'address', 'spec_id', 'quantity'];
 
   function cardHtml(i) {
     return template.innerHTML.replace(/\{I\}/g, i);
@@ -163,6 +173,7 @@
     cards.forEach(function (card) {
       var checked = card.querySelector('.spec-radio:checked');
       var qty = parseInt(card.querySelector('.quantity-input').value || '0', 10) || 0;
+      // data-price 为「元」两位小数字符串，仅用于客户端预览；服务端以 spec.price_fen 计价
       var price = checked ? parseFloat(checked.dataset.price || '0') : 0;
       var sub = price * qty;
       card.querySelector('.address-subtotal').textContent = '¥' + sub.toFixed(2);

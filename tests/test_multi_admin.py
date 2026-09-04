@@ -92,6 +92,15 @@ def order_owner(phone):
         return None if o is None else dict(id=o.id, owner_admin_id=o.owner_admin_id)
 
 
+def builtin_spec_id(name="5斤装"):
+    """按 is_builtin+name 查内置规格 id（不硬编码 id）。"""
+    with app.app_context():
+        from app.models import Spec
+
+        spec = Spec.query.filter_by(is_builtin=True, name=name).first()
+        return spec.id if spec is not None else None
+
+
 def place_order(client, phone, ip="10.0.1.1"):
     """经当前会话（可能已访问短码）下单，返回 (order_id, owner_admin_id)。"""
     client.get(f"/order/new?phone={phone}")
@@ -108,7 +117,7 @@ def place_order(client, phone, ip="10.0.1.1"):
             "receiver_name_0": "测试收货人",
             "receiver_phone_0": "13900000001",
             "address_0": "广东省深圳市南山区测试地址1号",
-            "spec_name_0": "5斤装",
+            "spec_id_0": builtin_spec_id("5斤装"),
             "quantity_0": "2",
         },
         headers={"X-Forwarded-For": ip},

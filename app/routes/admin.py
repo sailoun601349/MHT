@@ -23,6 +23,8 @@ from sqlalchemy import or_, tuple_
 from ..extensions import db
 from ..models.admin import Admin
 from ..models.order import Order, OrderLog, OrderPhoto
+from ..models.spec import Spec
+from ..services import spec_service
 from ..services.admin_service import (
     create_admin,
     delete_admin,
@@ -548,3 +550,86 @@ def update_share_code():
     db.session.commit()
     flash(f"专属短码已更新为 {new_code}", "success")
     return redirect(url_for("admin.settings"))
+
+
+# ---- 规格与价格管理（规格 × 适用管理员） ----
+
+@admin_bp.get("/specs")
+@login_required
+def specs():
+    """规格管理页：超管全量 / 普通管理员两区块（我创建的 / 我适用的）。"""
+    data = spec_service.list_specs_for_page(current_user)
+    return render_template("admin/specs.html", **data)
+
+
+@admin_bp.post("/specs/create")
+@login_required
+def create_spec():
+    """新建自定义规格：名称 + 价格（元）；创建者默认仅自己适用。"""
+    name = request.form.get("name", "").strip()
+    price_yuan = request.form.get("price_yuan", "").strip()
+    try:
+        spec = spec_service.create_spec(current_user, name, price_yuan)
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.specs"))
+    flash(f"已创建规格「{spec.name}」（默认仅自己适用）", "success")
+    return redirect(url_for("admin.specs"))
+
+
+@admin_bp.post("/specs/<int:spec_id>/price")
+@login_required
+def change_spec_price(spec_id):
+    """改价：内置一律拒绝；超管任意自定义；普通管理员仅自己的。"""
+    spec = db.get_or_404(Spec, spec_id)
+    price_yuan = request.form.get("price_yuan", "").strip()
+    try:
+        spec_service.change_price(current_user, spec, price_yuan)
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.specs"))
+    flash(f"已更新「{spec.name}」价格", "success")
+    return redirect(url_for("admin.specs"))
+
+
+@admin_bp.post("/specs/<int:spec_id>/toggle")
+@login_required
+def toggle_spec(spec_id):
+    """下架 / 上架自定义规格（内置不可下架；下架保留适用关系）。"""
+    spec = db.get_or_404(Spec, spec_id)
+    try:
+        now_active = spec_service.toggle_active(current_user, spec)
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.specs"))
+    flash(f"「{spec.name}」已{'上架' if now_active else '下架'}", "success")
+    return redirect(url_for("admin.specs"))
+
+
+@admin_bp.post("/specs/<int:spec_id>/delete")
+@login_required
+def delete_spec(spec_id):
+    """删除自定义规格（内置不可删）；先清适用关系，历史订单快照不受影响。"""
+    spec = db.get_or_404(Spec, spec_id)
+    try:
+        spec_service.delete_spec(current_user, spec)
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.specs"))
+    flash(f"已删除规格「{spec.name}」，适用关系已一并清除", "success")
+    return redirect(url_for("admin.specs"))
+
+
+@admin_bp.post("/specs/<int:spec_id>/admins")
+@login_required
+def set_spec_admins(spec_id):
+    """超管设置规格适用管理员（勾选数组；创建者强制包含，普通管理员不可操作）。"""
+    spec = db.get_or_404(Spec, spec_id)
+    admin_ids = request.form.getlist("admin_ids")
+    try:
+        spec_service.set_applicable_admins(current_user, spec, admin_ids)
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.specs"))
+    flash(f"已更新「{spec.name}」的适用管理员", "success")
+    return redirect(url_for("admin.specs"))

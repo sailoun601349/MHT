@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% block title %}规格管理{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h5 class="mb-0">🥝 规格{% if current_user.is_super %}管理{% endif %}</h5>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSpecModal">+ 新建规格</button>
+</div>
+
+<p class="text-muted small mb-3">
+  还可创建 <span class="fw-bold text-kiwi-dark">{{ quota_left }}</span> 个自定义规格（上限 {{ quota_total }} 个，不含内置）。
+  内置 5斤装 / 10斤装 价格锁定、不可下架、不可删除。
+</p>
+
+{% if current_user.is_super %}
+<!-- ==================== 超级管理员：全量规格表格 ==================== -->
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>规格名称</th><th>价格</th><th>创建者</th><th>状态</th><th>适用</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>
+            <span class="fw-bold">{{ r.name }}</span>
+            {% if r.is_builtin %}<span class="badge badge-builtin">内置</span>{% endif %}
+          </td>
+          <td>
+            ¥{{ '%.2f' % (r.price_fen / 100) }}
+            {% if r.is_builtin %}<span class="badge badge-locked">锁定</span>{% endif %}
+          </td>
+          <td class="small">{{ r.creator_phone or '—' }}</td>
+          <td>
+            <span class="badge {{ 'badge-active' if r.is_active else 'badge-inactive' }}">
+              {{ '启用' if r.is_active else '下架' }}
+            </span>
+          </td>
+          <td class="small">
+            {% if r.is_builtin %}
+              <span class="text-kiwi-dark fw-bold">全部 {{ admins|length }} 人</span>
+            {% else %}
+              <span class="text-kiwi-dark fw-bold">{{ r.applied_count }} 人</span>
+            {% endif %}
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary ms-1 js-spec-admins"
+                    data-bs-toggle="modal" data-bs-target="#specAdminsModal"
+                    data-spec-id="{{ r.id }}"
+                    data-spec-name="{{ r.name }}"
+                    data-spec-builtin="{{ '1' if r.is_builtin else '0' }}">管理</button>
+          </td>
+          <td>
+            <div class="d-flex flex-wrap gap-1 align-items-center">
+              {% if r.is_builtin %}
+                <span class="text-muted small">价格锁定 · 不可删除</span>
+              {% else %}
+                <button type="button" class="btn btn-sm btn-outline-primary js-price-edit"
+                        data-bs-toggle="modal" data-bs-target="#priceSpecModal"
+                        data-spec-id="{{ r.id }}" data-spec-name="{{ r.name }}"
+                        data-spec-price="{{ '%.2f' % (r.price_fen / 100) }}">改价</button>
+                <form method="post" action="{{ url_for('admin.toggle_spec', spec_id=r.id) }}" class="m-0">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm {{ 'btn-outline-warning' if r.is_active else 'btn-outline-success' }}">
+                    {{ '下架' if r.is_active else '上架' }}
+                  </button>
+                </form>
+                <form method="post" action="{{ url_for('admin.delete_spec', spec_id=r.id) }}" class="m-0"
+                      onsubmit="return confirm('删除后适用关系一并清除，历史订单不受影响。确定删除「{{ r.name }}」吗？');">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-danger">删除</button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">暂无规格</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<!-- ==================== 普通管理员：我创建的 / 我适用的 ==================== -->
+<h6 class="mt-2 mb-2">我创建的</h6>
+{% if created_specs %}
+<div class="row g-3 mb-4">
+  {% for spec in created_specs %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <span class="fw-bold">{{ spec.name }}</span>
+          <span class="badge {{ 'badge-active' if spec.is_active else 'badge-inactive' }}">{{ spec.status_label }}</span>
+        </div>
+        <div class="mb-2"><span class="spec-price">¥{{ '%.2f' % spec.price_yuan }}</span></div>
+        <div class="d-flex flex-wrap gap-1">
+          <button type="button" class="btn btn-sm btn-outline-primary js-price-edit"
+                  data-bs-toggle="modal" data-bs-target="#priceSpecModal"
+                  data-spec-id="{{ spec.id }}" data-spec-name="{{ spec.name }}"
+                  data-spec-price="{{ '%.2f' % spec.price_yuan }}">改价</button>
+          <form method="post" action="{{ url_for('admin.toggle_spec', spec_id=spec.id) }}" class="m-0">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm {{ 'btn-outline-warning' if spec.is_active else 'btn-outline-success' }}">
+              {{ '下架' if spec.is_active else '上架' }}
+            </button>
+          </form>
+          <form method="post" action="{{ url_for('admin.delete_spec', spec_id=spec.id) }}" class="m-0"
+                onsubmit="return confirm('删除后适用关系一并清除，历史订单不受影响。确定删除「{{ spec.name }}」吗？');">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-outline-danger">删除</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-muted small mb-4">还没有创建过自定义规格，点击右上角「新建规格」开始。</div>
+{% endif %}
+
+<h6 class="mb-2">我适用的（只读）</h6>
+{% if applicable_specs %}
+<div class="row g-3 mb-4">
+  {% for spec in applicable_specs %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <span class="fw-bold">{{ spec.name }}</span>
+          {% if spec.is_builtin %}
+          <span class="badge badge-builtin">默认适用</span>
+          {% else %}
+          <span class="badge badge-open">由超管开放</span>
+          {% endif %}
+        </div>
+        <div class="mb-1"><span class="spec-price">¥{{ '%.2f' % spec.price_yuan }}</span></div>
+        <div class="small text-muted">下单页可直接选用</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-muted small mb-4">暂无他人开放给你的规格（内置 5斤装 / 10斤装 默认适用）。</div>
+{% endif %}
+{% endif %}
+
+<!-- ==================== 新建规格 ==================== -->
+<div class="modal fade" id="createSpecModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('admin.create_spec') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h6 class="modal-title">新建自定义规格</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">规格名称 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="name" required maxlength="50"
+                   placeholder="如：翠香3斤、徐香5斤礼盒装">
+            <div class="form-text">仅中英文/数字，须含「数字+斤」（斤后可带数字，如 3斤2）；显示宽度 ≤ 10 汉字</div>
+          </div>
+          <div class="mb-1">
+            <label class="form-label">价格（元）<span class="text-danger">*</span></label>
+            <input type="number" class="form-control" name="price_yuan" required
+                   min="0.01" max="9999" step="0.01" placeholder="0 &lt; 价格 ≤ 9999">
+            <div class="form-text">创建后默认仅自己适用；如需开放给其他管理员，由超级管理员勾选分配</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button class="btn btn-primary">创建</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 改价（仅自定义规格） ==================== -->
+<div class="modal fade" id="priceSpecModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="priceSpecForm" action="">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h6 class="modal-title">修改规格价格</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-2">规格：<span id="priceSpecName" class="fw-bold"></span></p>
+          <div class="mb-1">
+            <label class="form-label">新价格（元）<span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="priceSpecValue" name="price_yuan"
+                   required min="0.01" max="9999" step="0.01">
+            <div class="form-text">0 &lt; 价格 ≤ 9999 元，最多两位小数；对所有适用该规格的管理员下单同步生效</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if current_user.is_super %}
+<!-- ==================== 适用管理员勾选（仅超管） ==================== -->
+<div class="modal fade" id="specAdminsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="specAdminsForm" action="">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h6 class="modal-title">设置适用管理员</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-2">规格：<span id="specAdminsName" class="fw-bold"></span></p>
+          <div id="specAdminsList" class="d-grid gap-1"></div>
+          <div class="form-text mt-2">
+            内置规格可任意增删；自定义规格的创建者不可移除（置灰锁定）；任一管理员适用的规格合计 ≤ 20。
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+          <button class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script id="spec-admins-data" type="application/json">{{ {'rows': rows, 'admins': admins} | tojson }}</script>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  // ---- 改价弹窗：点按钮回填规格与当前价格 ----
+  var priceModal = document.getElementById('priceSpecModal');
+  var priceForm = document.getElementById('priceSpecForm');
+  var priceName = document.getElementById('priceSpecName');
+  var priceValue = document.getElementById('priceSpecValue');
+  if (priceModal && priceForm) {
+    priceModal.addEventListener('show.bs.modal', function (e) {
+      var btn = e.relatedTarget;
+      var id = btn.getAttribute('data-spec-id');
+      var name = btn.getAttribute('data-spec-name') || '';
+      var val = btn.getAttribute('data-spec-price') || '';
+      priceForm.action = '/admin/specs/' + id + '/price';
+      priceName.textContent = name;
+      priceValue.value = val;
+    });
+  }
+
+  // ---- 适用管理员勾选（仅超管页含 SPEC_ADMIN_DATA） ----
+  var dataScript = document.getElementById('spec-admins-data');
+  if (!dataScript) return;
+  var SPEC_ROWS = [];
+  var ADMINS = [];
+  try {
+    var parsed = JSON.parse(dataScript.textContent);
+    SPEC_ROWS = parsed.rows || [];
+    ADMINS = parsed.admins || [];
+  } catch (err) { return; }
+
+  function rowById(id) {
+    for (var i = 0; i < SPEC_ROWS.length; i++) {
+      if (String(SPEC_ROWS[i].id) === String(id)) return SPEC_ROWS[i];
+    }
+    return null;
+  }
+
+  var adminsModal = document.getElementById('specAdminsModal');
+  var adminsForm = document.getElementById('specAdminsForm');
+  var adminsList = document.getElementById('specAdminsList');
+  var adminsName = document.getElementById('specAdminsName');
+  if (adminsModal && adminsForm) {
+    adminsModal.addEventListener('show.bs.modal', function (e) {
+      var btn = e.relatedTarget;
+      var specId = btn.getAttribute('data-spec-id');
+      var spec = rowById(specId);
+      if (!spec) return;
+      adminsName.textContent = btn.getAttribute('data-spec-name') || spec.name || '';
+      adminsForm.action = '/admin/specs/' + specId + '/admins';
+
+      // 重建勾选列表
+      adminsList.innerHTML = '';
+      ADMINS.forEach(function (a) {
+        var label = document.createElement('label');
+        label.className = 'form-check spec-admin-item d-flex align-items-center gap-2 border rounded-3 px-3 py-2';
+        label.style.cursor = 'pointer';
+
+        var input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'form-check-input mt-0';
+        input.name = 'admin_ids';
+        input.value = String(a.id);
+        // 默认勾选「适用」；自定义规格创建者置灰锁定
+        var checked = (spec.applied || []).indexOf(a.id) !== -1;
+        var locked = (!spec.is_builtin && spec.locked === a.id);
+        input.checked = checked || locked;
+        input.disabled = locked;
+
+        var text = document.createElement('span');
+        text.className = 'small';
+        var labelText = (a.phone || '—') + (a.name ? '（' + a.name + '）' : '');
+        if (!a.is_active) labelText += ' · 停用';
+        if (locked) labelText += ' · 创建者';
+        text.textContent = labelText;
+
+        label.appendChild(input);
+        label.appendChild(text);
+        adminsList.appendChild(label);
+      });
+    });
+  }
+})();
+</script>
+{% endblock %}

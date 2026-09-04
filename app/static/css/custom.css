@@ -638,3 +638,94 @@ textarea.form-control { min-height: 48px; }
   border-color: var(--kiwi);
   color: #fff;
 }
+
+/* --------------------------------------------------------------------------
+   15. 规格管理（下单页选择器 / 管理页 spec-list / spec-card / 徽章）
+   -------------------------------------------------------------------------- */
+/* 下单页与「适用」展示共用 2 列卡片网格 */
+.spec-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.spec-list .spec-option {
+  margin: 0;
+}
+.spec-list .spec-card {
+  display: block;
+  position: relative;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 400;
+  color: var(--text);
+  background-color: #fff;
+  min-height: 56px;
+  transition: border-color .15s ease, background .15s ease;
+}
+.spec-list .spec-card:hover {
+  border-color: var(--kiwi);
+}
+.spec-list .spec-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: break-all;
+}
+.spec-list .spec-price {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--kiwi-dark);
+  margin-top: 2px;
+}
+/* 选中态：2px 主色描边 + 浅绿底 + 右上角对勾 */
+.spec-list .spec-radio:checked + .spec-card {
+  border: 2px solid var(--kiwi);
+  padding: 9px 11px; /* 补偿 1px 边框变 2px 的位移 */
+  background: var(--kiwi-50);
+}
+.spec-list .spec-radio:checked + .spec-card::after {
+  content: "✓";
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--kiwi-dark);
+  line-height: 1;
+}
+.spec-list .spec-option .spec-radio:focus-visible + .spec-card {
+  outline: 2px solid var(--kiwi);
+  outline-offset: 2px;
+}
+
+/* 规格管理页徽章 */
+.badge-builtin {
+  background-color: #E1F5EE;
+  color: #0F6E56;
+}
+.badge-builtin::before { background-color: #16A34A; }
+.badge-locked {
+  background-color: #FEF3C7;
+  color: #92400E;
+  gap: 0;
+}
+.badge-locked::before { display: none; }
+.badge-open {
+  background-color: #E6F1FB;
+  color: #185FA5;
+}
+.badge-open::before { background-color: #2563EB; }
+
+/* 「我适用的」区块价格色与列表项 */
+.spec-admin-item {
+  background-color: #fff;
+  border-color: var(--border) !important;
+}
+.spec-admin-item input:disabled + span {
+  color: var(--text-muted);
+}
+

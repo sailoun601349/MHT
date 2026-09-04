@@ -57,6 +57,15 @@ def order_count():
         return Order.query.count()
 
 
+def builtin_spec_id(name="5斤装"):
+    """按 is_builtin+name 查内置规格 id（不硬编码 id）。"""
+    with app.app_context():
+        from app.models import Spec
+
+        spec = Spec.query.filter_by(is_builtin=True, name=name).first()
+        return spec.id if spec is not None else None
+
+
 def place_order(client, phone, quantity=2):
     client.get(f"/order/new?phone={phone}")
     t = csrf(client)
@@ -68,7 +77,7 @@ def place_order(client, phone, quantity=2):
             "_csrf_token": t, "submit_nonce": nonce, "phone": phone,
             "address_count": "1", "receiver_name_0": "收货人", "receiver_phone_0": "13900000001",
             "address_0": "省市区地址",
-            "spec_name_0": "5斤装", "quantity_0": str(quantity),
+            "spec_id_0": builtin_spec_id("5斤装"), "quantity_0": str(quantity),
         },
     )
     return get_order(phone)
@@ -126,7 +135,7 @@ payload = {
     "_csrf_token": t, "submit_nonce": nonce, "phone": "13622220002",
     "address_count": "1", "receiver_name_0": "收货人", "receiver_phone_0": "13900000002",
     "address_0": "省市区地址",
-    "spec_name_0": "5斤装", "quantity_0": "1",
+    "spec_id_0": builtin_spec_id("5斤装"), "quantity_0": "1",
 }
 before = order_count()
 r1 = cust2.post("/order/create", data=payload)

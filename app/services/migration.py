@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""SQLite schema 迁移：v0 -> v1（一码多址） -> v2（多管理员） -> v3（金额整数化） -> v4（面单照片多张化） -> v5（去省市区）。
+"""SQLite schema 迁移：v0 -> v1（一码多址） -> v2（多管理员） -> v3（金额整数化） -> v4（面单照片多张化） -> v5（去省市区） -> v6（规格管理）。
 
 - v0：orders.query_code UNIQUE，无 sub_no
 - v1：query_code 不再唯一；新增 sub_no；UNIQUE(phone, query_code, sub_no)
@@ -8,6 +8,8 @@
 - v3：orders.spec_price/total_fee 由 Float（元）改 Integer（分），重建表。
 - v4：面单照片由 orders.express_photo_path 单字段改为 order_photos 多张表。
 - v5：orders 去掉 province/city/district 三列，地址统一由 address 承载，重建表。
+- v6：新增 specs/spec_admins 表 + orders.spec_id 快照列；
+      内置 5斤装/10斤装 seed 在启动 ensure_spec_defaults 处理（不在迁移内，超管可能不存在）。
 
 迁移策略：
 - SQLite 不支持删除 UNIQUE 约束，因此 v0->v1 重建 orders 表。
@@ -15,6 +17,7 @@
 - v3 金额改类型需重建 orders 表。
 - v4 仅把历史 express_photo_path 迁入 order_photos 表（不重建）。
 - v5 去掉省市区三列需重建 orders 表。
+- v6 仅建新表 + ALTER TABLE 加列，不重建既有表。
 - 使用 PRAGMA user_version 记录 schema 版本。
 - 迁移前自动把 data/orders.db 复制到 data/backups/，备份失败会中止。
 - 迁移幂等：新库/旧库/多次启动均安全；若上次迁移中断（残留
@@ -28,7 +31,7 @@ from flask import current_app
 
 from ..extensions import db
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 def read_user_version(engine) -> int:
@@ -320,6 +323,37 @@ def _migrate_v5(engine) -> bool:
     return True
 
 
+def _migrate_v6(engine) -> bool:
+    """v5 -> v6：新增 specs/spec_admins 表 + orders.spec_id 快照列（幂等）。
+
+    说明：
+      - specs/spec_admins 已由 db.create_all() 创建时跳过（模型已注册）；
+      - orders.spec_id 仅为快照审计列，不加 FK / 关系约束；
+      - 内置规格 seed 不在此迁移（启动 ensure_spec_defaults 统一处理，超管可能不存在）。
+    """
+    names = table_names(engine)
+    order_cols = table_columns(engine, "orders")
+    changed = False
+
+    with engine.begin() as conn:
+        if "specs" not in names:
+            from ..models.spec import Spec
+
+            Spec.__table__.create(conn)
+            changed = True
+        if "spec_admins" not in names:
+            from ..models.spec import SpecAdmin
+
+            SpecAdmin.__table__.create(conn)
+            changed = True
+        if "spec_id" not in order_cols:
+            conn.exec_driver_sql("ALTER TABLE orders ADD COLUMN spec_id INTEGER")
+            changed = True
+    if changed:
+        current_app.logger.info("specs/spec_admins 建表 + orders.spec_id 加列完成")
+    return changed
+
+
 def run_schema_migrations(app) -> None:
     """幂等执行 schema 迁移，在 db.create_all() 之后调用。"""
     with app.app_context():
@@ -382,5 +416,17 @@ def run_schema_migrations(app) -> None:
             if table_has_rows(engine, "orders"):
                 _backup_db()
             _migrate_v5(engine)
+            # 显式置 5（勿用 SCHEMA_VERSION=6，否则会跳过 v6 正常入口）
+            set_user_version(engine, 5)
+            version = 5
+            current_app.logger.info("schema 已迁移至 user_version=5")
+
+        # ---- v5 -> v6（规格管理：specs / spec_admins / orders.spec_id） ----
+        if version < 6:
+            _migrate_v6(engine)
             set_user_version(engine, SCHEMA_VERSION)
+            version = 6
             current_app.logger.info("schema 已迁移至 user_version=%s", SCHEMA_VERSION)
+        else:
+            # 版本已到位但表/列缺失时补齐（自愈部分中断）
+            _migrate_v6(engine)

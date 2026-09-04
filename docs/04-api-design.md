@@ -8,8 +8,8 @@
 |---|---|---|---|
 | GET | / | 首页：手机号入口 / 手机号+查询码入口 | 公开 |
 | POST | /enter | 首页提交：路由到下单页或订单查询页 | 公开 |
-| GET | /order/new?phone=xxx | 下单填写页 | 公开 |
-| POST | /order/create | 提交订单（支持多地址，生成一个组查询码） | 公开 |
+| GET | /order/new?phone=xxx | 下单填写页（按归属管理员过滤「适用且启用」规格，隐藏 spec_id radio） | 公开 |
+| POST | /order/create | 提交订单（支持多地址；每地址按 spec_id 校验适用+启用，服务端计价） | 公开 |
 | GET | /order/success?phone=&code= | 下单成功页，展示组查询码与地址清单 | 公开 |
 | GET | /order/success/<id> | 兼容旧链接，302 到新成功页 | 公开 |
 | GET | /order/query?phone=&code= | 订单组查询（一码多址，可切换） | 公开 |
@@ -20,6 +20,20 @@
 | GET | /admin/orders/<id> | 订单详情 + 发货操作 | 管理员 |
 | POST | /admin/orders/<id>/ship | 保存发货信息（快递+照片） | 管理员 |
 | POST | /admin/orders/<id>/status | 标记完成/取消 | 管理员 |
+| GET | /admin/specs | 规格管理页（超管全量 / 管理员两区块） | 登录管理员 |
+| POST | /admin/specs/create | 新建自定义规格（名称+价格元） | 登录管理员 |
+| POST | /admin/specs/<id>/price | 改价（内置一律拒绝；超管任意自定义；普通仅自己的） | 登录管理员 |
+| POST | /admin/specs/<id>/toggle | 下架/上架自定义规格（内置恒启用） | 登录管理员 |
+| POST | /admin/specs/<id>/delete | 删除自定义规格（内置不可删；先清适用关系） | 登录管理员 |
+| POST | /admin/specs/<id>/admins | 设置适用管理员勾选数组（创建者强制包含） | 仅超管 |
+| GET | /admin/admins | 管理员管理 | 仅超管 |
+| POST | /admin/admins | 创建普通管理员（自动同步内置规格适用） | 仅超管 |
+| POST | /admin/admins/<id>/reset-password | 重置登录密码 | 仅超管 |
+| POST | /admin/admins/<id>/toggle-active | 停用/启用 | 仅超管 |
+| POST | /admin/admins/<id>/delete | 删除管理员（订单+自定义规格移交超管，清适用关系） | 仅超管 |
+| GET | /admin/change-password | 自助改密 | 管理员 |
+| GET | /admin/settings | 个人设置/专属短码 | 管理员 |
+| POST | /admin/share-code | 更新专属短码 | 管理员 |
 | GET | /uploads/<path> | 面单照片访问 | 公开 |
 | GET | /static/<path> | 静态资源 | 公开 |
 
@@ -39,19 +53,20 @@
 ```
 字段: phone, address_count=1..20,
       每地址 receiver_name_{i}, receiver_phone_{i},
-            address_{i}, spec_name_{i}, quantity_{i}
+            address_{i}, spec_id_{i}, quantity_{i}
 服务端校验（每地址）:
   - phone / receiver_phone 匹配 ^1[3-9]\d{9}$
   - receiver_name / address 非空且长度 ≤ 100 / ≤ 500
-  - spec_name 必须在配置 SPECS 中存在（价格以服务端配置为准）
+  - spec_id > 0 且须属于 owner（resolve_order_owner 解析的责任管理员）「适用且启用」
   - quantity 整数 1..99
   - address_count 1..20
+计价: 每地址价格 = 该规格记录当前 price_fen（服务端计价，防前端篡改）
 流程:
   1) 限流检查（同 IP 5 次/分钟，一组按 1 次计）
   2) BEGIN IMMEDIATE 分配一次全局顺序号（组码）
-  3) 每地址 total_fee = spec_price × quantity（round 2 位）
+  3) 每地址 total_fee = spec.price_fen × quantity
   4) group_total = Σ 各地址小计
-  5) 插入 N 条订单（sub_no=1..N，共享 query_code）
+  5) 插入 N 条订单（sub_no=1..N，共享 query_code；落 spec_id/spec_name/spec_price 快照）
   6) 302 /order/success?phone=..&code=..
 ```
 

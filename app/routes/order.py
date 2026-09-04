@@ -20,6 +20,7 @@ from ..services.order_service import (
     get_orders_by_phone_code,
     resolve_order_owner,
 )
+from ..services.spec_service import get_applicable_specs
 from ..utils import client_ip, is_valid_phone, is_valid_query_code
 from ..utils.ratelimit import SlidingWindowLimiter
 
@@ -38,10 +39,14 @@ def new_order():
     # 幂等提交令牌：同一表单只能成功提交一次，防止双击/重复提交
     order_nonce = secrets.token_hex(8)
     session["order_nonce"] = order_nonce
+    # 提前解析归属管理员，只渲染其「适用且启用」的规格
+    owner_admin_id = resolve_order_owner(session.get("ref_admin_id"))
+    specs = get_applicable_specs(owner_admin_id, active_only=True)
     return render_template(
         "order/new.html",
         phone=phone,
-        specs=current_app.config["SPECS"],
+        specs=specs,
+        owner_admin_id=owner_admin_id,
         max_addresses=current_app.config["MAX_ADDRESSES"],
         order_nonce=order_nonce,
     )
@@ -83,7 +88,10 @@ def create():
         receiver_name = request.form.get(f"receiver_name_{i}", "").strip()
         receiver_phone = request.form.get(f"receiver_phone_{i}", "").strip()
         address = request.form.get(f"address_{i}", "").strip()
-        spec_name = request.form.get(f"spec_name_{i}", "").strip()
+        try:
+            spec_id = int(request.form.get(f"spec_id_{i}", "") or "0")
+        except (TypeError, ValueError):
+            spec_id = 0
         try:
             quantity = int(request.form.get(f"quantity_{i}", ""))
         except (TypeError, ValueError):
@@ -102,7 +110,7 @@ def create():
         if not 1 <= quantity <= 99:
             flash(f"第 {i + 1} 个地址：数量需在 1-99 之间", "error")
             return redirect(url_for("order.new_order", phone=phone))
-        if not spec_name:
+        if spec_id <= 0:
             flash(f"第 {i + 1} 个地址：请选择规格", "error")
             return redirect(url_for("order.new_order", phone=phone))
 
@@ -111,7 +119,7 @@ def create():
                 "receiver_name": receiver_name,
                 "receiver_phone": receiver_phone,
                 "address": address,
-                "spec_name": spec_name,
+                "spec_id": spec_id,
                 "quantity": quantity,
             }
         )

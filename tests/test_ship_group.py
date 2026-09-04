@@ -71,6 +71,15 @@ def upload(client, order_id, name="p.png"):
     )
 
 
+def builtin_spec_id(name="5斤装"):
+    """按 is_builtin+name 查内置规格 id（不硬编码 id）。"""
+    with app.app_context():
+        from app.models import Spec
+
+        spec = Spec.query.filter_by(is_builtin=True, name=name).first()
+        return spec.id if spec is not None else None
+
+
 def place_order(client, phone, address_count, ip="10.0.1.1"):
     """下单（支持多地址），返回 group_orders 原始字段列表（独立 app_context 查询）。
 
@@ -93,7 +102,7 @@ def place_order(client, phone, address_count, ip="10.0.1.1"):
             f"receiver_name_{i}": f"收货人{i}",
             f"receiver_phone_{i}": f"1390000000{i}",
             f"address_{i}": f"广东省深圳市南山区测试地址{i}号",
-            f"spec_name_{i}": "5斤装",
+            f"spec_id_{i}": builtin_spec_id("5斤装"),
             f"quantity_{i}": "1",
         })
     client.post("/order/create", data=data, headers={"X-Forwarded-For": ip})

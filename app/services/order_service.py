@@ -6,6 +6,7 @@ from flask import current_app
 
 from ..extensions import db
 from ..models.order import Order, OrderLog
+from .spec_service import resolve_spec_for_owner
 
 
 def get_next_order_seq() -> str:
@@ -37,29 +38,23 @@ def get_next_order_seq() -> str:
         conn.close()
 
 
-def find_spec(spec_name: str):
-    """按名称查找规格（价格以服务端配置为准，防篡改）。"""
-    for spec in current_app.config["SPECS"]:
-        if spec["name"] == spec_name:
-            return spec
-    return None
-
-
-def create_order(data: dict) -> Order:
+def create_order(data: dict, owner_admin_id=None) -> Order:
     """创建单个地址订单（兼容旧调用/单地址场景）。
 
     data 需包含：phone, receiver_name, receiver_phone, address,
-    spec_name, quantity（数量为 int，校验在路由层）。
+    spec_id, quantity（spec_id 为适用规格 id；价格以服务端 spec.price_fen 为准）。
     """
     phone = data["phone"]
     addr_form = {
         "receiver_name": data["receiver_name"],
         "receiver_phone": data["receiver_phone"],
         "address": data["address"],
-        "spec_name": data["spec_name"],
-        "quantity": data["quantity"],
+        "spec_id": int(data["spec_id"]),
+        "quantity": int(data["quantity"]),
     }
-    query_code, orders, _group_total = create_order_group(phone, [addr_form])
+    query_code, orders, _group_total = create_order_group(
+        phone, [addr_form], owner_admin_id=owner_admin_id
+    )
     return orders[0]
 
 
@@ -67,12 +62,14 @@ def create_order_group(phone: str, addr_forms: list, owner_admin_id=None) -> tup
     """一次提交创建一组订单（一码多址）。
 
     addr_forms: list[dict]，每个 dict 含：
-        receiver_name, receiver_phone, address, spec_name, quantity
+        receiver_name, receiver_phone, address, spec_id, quantity
     owner_admin_id: 责任管理员 id（可为 None，落库时归超级管理员兜底）。
     返回: (query_code, orders, group_total)
     说明：
       - 每次提交只分配一次全局顺序号；
-      - 每条地址生成一行 Order，sub_no=1..N；
+      - 每条地址按 spec_id 校验「适用 + 启用」（resolve_spec_for_owner），
+        价格以规格记录当前 price_fen 为准（防前端篡改，服务端计价）；
+      - 每条地址生成一行 Order，sub_no=1..N，spec_id/spec_name/spec_price 落库快照；
       - 每行 total_fee 为该地址小计，group_total 为整组总价。
     """
     if not addr_forms:
@@ -82,12 +79,10 @@ def create_order_group(phone: str, addr_forms: list, owner_admin_id=None) -> tup
     orders = []
     group_total = 0  # 分
     for i, form in enumerate(addr_forms, start=1):
-        spec = find_spec(form["spec_name"])
-        if spec is None:
-            raise ValueError("规格不存在，请刷新页面后重试")
+        spec = resolve_spec_for_owner(form["spec_id"], owner_admin_id)
         quantity = int(form["quantity"])
-        # 金额以「整数分」存储，避免 Float 精度误差；配置价格仍为元
-        spec_price_fen = int(round(float(spec["price"]) * 100))
+        # 服务端计价：以规格记录 price_fen 为准（整数分，无浮点误差）
+        spec_price_fen = spec.price_fen
         total_fee_fen = spec_price_fen * quantity
         group_total += total_fee_fen
         orders.append(
@@ -99,7 +94,8 @@ def create_order_group(phone: str, addr_forms: list, owner_admin_id=None) -> tup
                 receiver_name=form["receiver_name"],
                 receiver_phone=form["receiver_phone"],
                 address=form["address"],
-                spec_name=spec["name"],
+                spec_id=spec.id,
+                spec_name=spec.name,
                 spec_price=spec_price_fen,
                 quantity=quantity,
                 total_fee=total_fee_fen,

@@ -15,23 +15,28 @@
 │ id       │      │ name (PK)    │      │ id          │
 │ phone    │      │ value        │      │ phone       │
 │ name     │      └──────────────┘      │ query_code  │
-│ code_hash│                           │ receiver_*  │
-│ created  │                           │ address     │
-└──────────┘                           │ spec_*      │
-                                       │ quantity    │
-                                       │ total_fee   │
-                                       │ status      │
-                                       │ express_*   │
-                                       │ photo_path  │
-                                       │ note        │
-                                       │ created_at  │
-                                       │ updated_at  │
-                                       └─────────────┘
+│ code_hash│      ┌──────────────┐      │ receiver_*  │
+│ created  │      │    specs     │      │ address     │
+└────┬─────┘      ├──────────────┤      │ spec_id     │
+     │FK admin_id │ id           │      │ spec_name   │
+┌────▼─────────┐  │ name         │      │ spec_price  │
+│ spec_admins  │  │ price_fen    │      │ quantity    │
+├──────────────┤  │ is_builtin   │      │ total_fee   │
+│ spec_id (PK) │◄─┤ is_active    │      │ status      │
+│ admin_id (PK)│  │ created_by_  │      │ express_*   │
+└──────┬───────┘  │   admin_id   │      │ note        │
+       │FK spec_id├──────────────┤      │ created_at  │
+       └──────────►│ 下单快照     │      │ updated_at  │
+                  └──────────────┘      └─────────────┘
+        （spec_admins = specs × admins 多对多适用关系）
 ```
 
 - counters 只用于全局顺序号原子自增，单行记录 `order_seq`
 - orders.query_code 为「组码」：同一次提交的多地址订单共享一个查询码；展示格式为 `手机号 + 顺序号`
 - 组内唯一：`(phone, query_code, sub_no)` 联合唯一，`sub_no` 为组内地址序号 1..N
+- `specs`：商品规格（允许重名按 id 区分；价格以分存储；内置 5斤装/10斤装 价格锁定）
+- `spec_admins`：规格 × 适用管理员多对多；一条记录 = 该规格对该管理员可见可售
+- `orders.spec_id`：下单时规格 id 快照（不加 FK/关系约束，删除规格后历史订单不坏）
 
 ## 3. 建表 SQL（参照物）
 
@@ -53,6 +58,25 @@ CREATE TABLE admins (
 
 CREATE UNIQUE INDEX uq_admins_share_code ON admins(share_code) WHERE share_code IS NOT NULL;
 
+CREATE TABLE specs (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                 TEXT    NOT NULL,                 -- 规格名（允许重名，非唯一）
+    price_fen            INTEGER NOT NULL,                 -- 单价（分）；内置 5000 / 10000 锁定
+    is_builtin           INTEGER NOT NULL DEFAULT 0,       -- 是否内置（5斤装/10斤装）
+    is_active            INTEGER NOT NULL DEFAULT 1,       -- 启用/下架
+    created_by_admin_id  INTEGER,                          -- 创建者 admins.id（内置指向超管）
+    created_at           TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+    updated_at           TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
+CREATE TABLE spec_admins (                                -- 规格 × 适用管理员
+    spec_id              INTEGER NOT NULL REFERENCES specs(id),
+    admin_id             INTEGER NOT NULL REFERENCES admins(id),
+    created_at           TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+    PRIMARY KEY (spec_id, admin_id)
+);
+CREATE INDEX idx_spec_admins_admin_id ON spec_admins(admin_id);
+
 CREATE TABLE counters (
     name  TEXT PRIMARY KEY,
     value INTEGER NOT NULL DEFAULT 0
@@ -69,6 +93,7 @@ CREATE TABLE orders (
     receiver_name      TEXT    NOT NULL,
     receiver_phone     TEXT    NOT NULL,
     address            TEXT    NOT NULL,                  -- 完整收货地址（省市区+街道门牌）
+    spec_id            INTEGER,                          -- 规格 id 快照（v6 起，无 FK）
     spec_name          TEXT    NOT NULL,
     spec_price         REAL    NOT NULL,
     quantity           INTEGER NOT NULL,
@@ -117,6 +142,14 @@ created ──发货──▶ shipped ──完成──▶ completed
 - 展示：`f"{value:03d}"`，001 开始，超过 999 自然为 1000，不截断
 - 组码：一次提交只分配一次，组内所有订单共享 query_code；唯一性由 `(phone, query_code, sub_no)` 兜底
 - 回退：计数不回退（允许空洞），避免并发下重复序号
+
+### 规格与适用关系（specs / spec_admins）
+
+- 价格一律以「分」存储（`price_fen`），展示 `/100` 两位小数；下单计价只信服务端规格记录
+- 内置规格（`is_builtin=1`）：`5斤装`=5000、`10斤装`=10000，名称/价格锁定、不可下架/删除
+- 内置 seed 在启动 `ensure_spec_defaults` 执行（幂等），为所有启用管理员补默认适用记录
+- `spec_admins` 联合主键 `(spec_id, admin_id)`：创建者天然适用自己的自定义规格且不可被移除
+- `orders.spec_id`：下单时规格 id 快照，**不加 FK**——规格删除后历史订单不坏；名称/单价快照保留
 
 ## 5. 并发与锁
 

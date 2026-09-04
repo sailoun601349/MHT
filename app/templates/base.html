@@ -17,7 +17,10 @@
         <span class="badge {{ 'badge-role-super' if current_user.is_super else 'badge-role-admin' }} d-none d-md-inline">{{ current_user.role_label }}</span>
         <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.orders') }}">订单管理</a>
         {% if current_user.is_super %}
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.specs') }}">规格管理</a>
         <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.admins') }}">管理员</a>
+        {% else %}
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.specs') }}">规格</a>
         {% endif %}
         <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin.settings') }}">个人设置</a>
         <form method="post" action="{{ url_for('admin.logout') }}" class="m-0">

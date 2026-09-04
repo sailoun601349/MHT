@@ -62,8 +62,8 @@
               <div class="row g-2 mt-1">
                 {% for photo in o.photos %}
                 <div class="col-6">
-                  <a href="{{ url_for('uploaded_file', filename=photo.path) }}" target="_blank">
-                    <img src="{{ url_for('uploaded_file', filename=photo.path) }}"
+                  <a href="{{ signed_photo_url(photo.path) }}" target="_blank">
+                    <img src="{{ signed_photo_url(photo.path) }}"
                          class="img-fluid rounded-3" alt="快递面单照片">
                   </a>
                 </div>

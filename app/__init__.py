@@ -3,7 +3,7 @@
 import os
 
 import click
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, abort, render_template, request, send_from_directory
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from werkzeug.routing import BaseConverter
@@ -11,6 +11,7 @@ from werkzeug.routing import BaseConverter
 from .config import Config
 from .extensions import db, login_manager
 from .utils.csrf import generate_csrf_token, validate_csrf
+from .utils.photo_url import signed_photo_url, verify_photo_signature
 
 
 class ShareCodeConverter(BaseConverter):
@@ -116,7 +117,7 @@ def create_app(config_class=Config):
     # CSRF：模板注入 token + 非安全方法全局校验
     @app.context_processor
     def inject_globals():
-        return {"csrf_token": generate_csrf_token}
+        return {"csrf_token": generate_csrf_token, "signed_photo_url": signed_photo_url}
 
     @app.before_request
     def _csrf_check():
@@ -131,9 +132,13 @@ def create_app(config_class=Config):
     app.register_blueprint(order_bp)
     app.register_blueprint(admin_bp)
 
-    # 面单照片访问
+    # 面单照片访问（HMAC 时效签名校验：需带有效 exp+sig，未登录也不能凭裸 URL 长期访问）
     @app.route("/uploads/<path:filename>")
     def uploaded_file(filename):
+        exp = request.args.get("exp", type=int, default=0)
+        sig = request.args.get("sig", "", type=str)
+        if not verify_photo_signature(filename, exp, sig):
+            abort(404)
         return send_from_directory(app.config["UPLOAD_DIR"], filename)
 
     # 初始化数据库

@@ -59,8 +59,8 @@
             <div class="row g-2 mt-1">
               {% for photo in order.photos %}
               <div class="col-6 col-md-4">
-                <a href="{{ url_for('uploaded_file', filename=photo.path) }}" target="_blank">
-                  <img src="{{ url_for('uploaded_file', filename=photo.path) }}" class="img-fluid rounded-3 w-100" alt="面单照片">
+                <a href="{{ signed_photo_url(photo.path) }}" target="_blank">
+                  <img src="{{ signed_photo_url(photo.path) }}" class="img-fluid rounded-3 w-100" alt="面单照片">
                 </a>
               </div>
               {% endfor %}
@@ -97,8 +97,8 @@
               {% for photo in order.photos %}
               <div class="col-6 col-md-4">
                 <div class="position-relative">
-                  <a href="{{ url_for('uploaded_file', filename=photo.path) }}" target="_blank">
-                    <img src="{{ url_for('uploaded_file', filename=photo.path) }}" class="img-fluid rounded-3 w-100" alt="面单照片">
+                  <a href="{{ signed_photo_url(photo.path) }}" target="_blank">
+                    <img src="{{ signed_photo_url(photo.path) }}" class="img-fluid rounded-3 w-100" alt="面单照片">
                   </a>
                   <form method="post" action="{{ url_for('admin.delete_photo', order_id=order.id, photo_id=photo.id) }}" class="position-absolute top-0 end-0 m-1">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
@@ -170,8 +170,8 @@
               <div class="row g-2 mt-1">
                 {% for photo in order.photos %}
                 <div class="col-6 col-md-4">
-                  <a href="{{ url_for('uploaded_file', filename=photo.path) }}" target="_blank">
-                    <img src="{{ url_for('uploaded_file', filename=photo.path) }}" class="img-fluid rounded-3 w-100" alt="面单照片">
+                  <a href="{{ signed_photo_url(photo.path) }}" target="_blank">
+                    <img src="{{ signed_photo_url(photo.path) }}" class="img-fluid rounded-3 w-100" alt="面单照片">
                   </a>
                 </div>
                 {% endfor %}
